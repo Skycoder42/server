@@ -2,6 +2,7 @@
 /db.sqlite3*
 Session.vim
 /.venv
+/.python
 /assets
 /logs
 /.coverage
