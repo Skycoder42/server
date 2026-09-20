@@ -20,6 +20,12 @@ settings.STATIC_ROOT = tempfile.mkdtemp(prefix="etebase-static-")
 # is what the docker test-server image does by commenting out the setting).
 settings.ETEBASE_CREATE_USER_FUNC = None
 
+# Opt-in Redis (e.g. for the websocket smoke tests): wire ETEBASE_REDIS_URI
+# into settings before the app is built, as redisw/app_settings cache it.
+etebase_redis_uri = os.environ.get("ETEBASE_REDIS_URI")
+if etebase_redis_uri:
+    settings.ETEBASE_REDIS_URI = etebase_redis_uri
+
 from etebase_server.asgi import application  # noqa: E402
 
 

@@ -1,4 +1,5 @@
 import typing as t
+from contextlib import asynccontextmanager
 
 from django.conf import settings
 
@@ -19,6 +20,14 @@ from .routers.websocket import websocket_router
 
 
 def create_application(prefix="", middlewares=[]):
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        from .redis import redisw
+
+        await redisw.setup()
+        yield
+        await redisw.close()
+
     app = FastAPI(
         title="Etebase",
         description="The Etebase server API documentation",
@@ -26,6 +35,7 @@ def create_application(prefix="", middlewares=[]):
             "url": "https://docs.etebase.com",
             "description": "Docs about the API specifications and clients.",
         },
+        lifespan=lifespan,
         # FIXME: version="2.5.0",
     )
     VERSION = "v1"  # noqa: N806
@@ -59,18 +69,6 @@ def create_application(prefix="", middlewares=[]):
 
     for middleware in middlewares:
         app.add_middleware(middleware)
-
-    @app.on_event("startup")
-    async def on_startup() -> None:
-        from .redis import redisw
-
-        await redisw.setup()
-
-    @app.on_event("shutdown")
-    async def on_shutdown():
-        from .redis import redisw
-
-        await redisw.close()
 
     @app.exception_handler(CustomHttpException)
     async def custom_exception_handler(request: Request, exc: CustomHttpException):

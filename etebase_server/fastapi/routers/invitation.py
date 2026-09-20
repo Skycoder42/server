@@ -3,6 +3,7 @@ import typing as t
 from django.db import IntegrityError, transaction
 from django.db.models import QuerySet
 from fastapi import APIRouter, Depends, Request, status
+from pydantic import ConfigDict
 
 from etebase_server.django import models
 from etebase_server.django.utils import CallbackContext, get_user_queryset
@@ -31,10 +32,9 @@ default_queryset: InvitationQuerySet = models.CollectionInvitation.objects.all()
 
 
 class UserInfoOut(BaseModel):
-    pubkey: bytes
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        from_attributes = True
+    pubkey: bytes
 
     @classmethod
     def from_orm(cls: t.Type["UserInfoOut"], obj: models.UserInfo) -> "UserInfoOut":
@@ -63,11 +63,10 @@ class CollectionInvitationIn(CollectionInvitationCommon):
 
 
 class CollectionInvitationOut(CollectionInvitationCommon):
+    model_config = ConfigDict(from_attributes=True)
+
     fromUsername: str
     fromPubkey: bytes
-
-    class Config:
-        from_attributes = True
 
     @classmethod
     def from_orm(cls: t.Type["CollectionInvitationOut"], obj: models.CollectionInvitation) -> "CollectionInvitationOut":

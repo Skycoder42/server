@@ -1,10 +1,18 @@
+import os
+
 import pytest
 
 from .protocol_client import msgpack_unpack
 
 pytestmark = pytest.mark.django_db
 
+no_redis = pytest.mark.skipif(
+    os.environ.get("ETEBASE_REDIS_URI") is not None,
+    reason="This test assumes Redis is not configured",
+)
 
+
+@no_redis
 async def test_subscription_ticket_requires_redis(account):
     """The websocket feature needs Redis; without it the ticket endpoint is 501."""
     assert (await account.create_collection("col-ws")).status_code == 201

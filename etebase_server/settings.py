@@ -21,8 +21,6 @@ BASE_DIR = os.path.dirname(SOURCE_DIR)
 
 AUTH_USER_MODEL = "myauth.User"
 
-DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
@@ -121,8 +119,6 @@ TIME_ZONE = "UTC"
 
 USE_I18N = True
 
-USE_L10N = True
-
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
@@ -164,8 +160,9 @@ if any(os.path.isfile(x) for x in config_locations):
 
     if "allowed_hosts" in config:
         ALLOWED_HOSTS = [y for x, y in config.items("allowed_hosts")]
-        CSRF_TRUSTED_ORIGINS = ["https://" + y for x, y in config.items("allowed_hosts")] + \
-                               ["http://" + y for x, y in config.items("allowed_hosts")]
+        CSRF_TRUSTED_ORIGINS = ["https://" + y for x, y in config.items("allowed_hosts")] + [
+            "http://" + y for x, y in config.items("allowed_hosts")
+        ]
 
     if "database" in config:
         DATABASES = {"default": {x.upper(): y for x, y in config.items("database")}}

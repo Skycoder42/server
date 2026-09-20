@@ -3,6 +3,7 @@ import typing as t
 from django.db import transaction
 from django.db.models import QuerySet
 from fastapi import APIRouter, Depends, status
+from pydantic import ConfigDict
 
 from etebase_server.django import models
 from etebase_server.myauth.models import UserType, get_typed_user_model
@@ -10,7 +11,13 @@ from etebase_server.myauth.models import UserType, get_typed_user_model
 from ..db_hack import django_db_cleanup_decorator
 from ..msgpack import MsgpackResponse, MsgpackRoute
 from ..stoken_handler import filter_by_stoken_and_limit
-from ..utils import PERMISSIONS_READ, PERMISSIONS_READWRITE, BaseModel, get_object_or_404, permission_responses
+from ..utils import (
+    PERMISSIONS_READ,
+    PERMISSIONS_READWRITE,
+    BaseModel,
+    get_object_or_404,
+    permission_responses,
+)
 from .authentication import get_authenticated_user
 from .collection import get_collection, verify_collection_admin
 
@@ -35,11 +42,10 @@ class CollectionMemberModifyAccessLevelIn(BaseModel):
 
 
 class CollectionMemberOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     username: str
     accessLevel: models.AccessLevels
-
-    class Config:
-        from_attributes = True
 
     @classmethod
     def from_orm(cls: t.Type["CollectionMemberOut"], obj: models.CollectionMember) -> "CollectionMemberOut":

@@ -1,9 +1,20 @@
-django>=4.0,<5.0
+# Django 5.2 is the LTS we target. <6.0 blocks a future Django 6.x (breaking
+# major, and django-stubs 5.2.x is not validated against it).
+django>=5.2,<6.0
 msgpack
 pynacl
-fastapi>=0.104
-pydantic>=2.0.0
+# FastAPI is pre-1.0, so minor bumps can change routing internals. We target
+# the 0.141 line (verified, incl. the MsgpackRoute effective-route-context
+# fix behind it); >0.140 guarantees the modern routing machinery is present.
+fastapi>=0.140,<0.142
+# pydantic 2.9 is fastapi 0.141's declared minimum. <3.0 blocks pydantic v3,
+# which removes the v2 deprecations this codebase still touches / FastAPI
+# does not support yet.
+pydantic>=2.9,<3.0
 typing_extensions
 uvicorn[standard]
 aiofiles
-redis>=4.2.0rc1
+# redis-py >=6 provides the modern redis.asyncio/from_url/pubsub API used by
+# the websocket endpoints. <9 caps at the 8.x line we verified (redis-py 8
+# changed get_message to return a dict - handled in websocket.py).
+redis>=6,<9

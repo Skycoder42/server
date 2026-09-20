@@ -2,25 +2,23 @@ import typing as t
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from fastapi import HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class HttpErrorField(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     field: str
     code: str
     detail: str
 
-    class Config:
-        from_attributes = True
-
 
 class HttpErrorOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     code: str
     detail: str
     errors: t.Optional[t.List[HttpErrorField]]
-
-    class Config:
-        from_attributes = True
 
 
 class CustomHttpException(HTTPException):
@@ -86,7 +84,7 @@ class HttpError(CustomHttpException):
 
     @property
     def as_dict(self) -> dict:
-        return HttpErrorOut(code=self.code, errors=self.errors, detail=self.detail).dict()
+        return HttpErrorOut(code=self.code, errors=self.errors, detail=self.detail).model_dump()
 
 
 class ValidationError(HttpError):

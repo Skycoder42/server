@@ -6,6 +6,7 @@ from django.core.files.base import ContentFile
 from django.db import IntegrityError, transaction
 from django.db.models import Q, QuerySet
 from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
+from pydantic import ConfigDict
 
 from etebase_server.django import models
 from etebase_server.myauth.models import UserType
@@ -46,13 +47,12 @@ ChunkType = t.Tuple[str, t.Optional[bytes]]
 
 
 class CollectionItemRevisionInOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     uid: str
     meta: bytes
     deleted: bool
     chunks: t.List[ChunkType]
-
-    class Config:
-        from_attributes = True
 
     @classmethod
     def from_orm_context(
@@ -77,8 +77,7 @@ class CollectionItemCommon(BaseModel):
 
 
 class CollectionItemOut(CollectionItemCommon):
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
     @classmethod
     def from_orm_context(

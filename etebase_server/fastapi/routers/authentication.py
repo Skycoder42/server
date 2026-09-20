@@ -12,6 +12,7 @@ from django.core import exceptions as django_exceptions
 from django.db import transaction
 from django.utils.functional import cached_property
 from fastapi import APIRouter, Depends, Request, status
+from pydantic import ConfigDict
 from typing_extensions import Literal
 
 from etebase_server.django import app_settings, models
@@ -24,7 +25,13 @@ from etebase_server.myauth.models import UserType, get_typed_user_model
 from ..dependencies import AuthData, get_auth_data, get_authenticated_user
 from ..exceptions import AuthenticationFailed, HttpError, transform_validation_error
 from ..msgpack import MsgpackResponse, MsgpackRoute
-from ..utils import BaseModel, get_user_username_email_kwargs, msgpack_decode, msgpack_encode, permission_responses
+from ..utils import (
+    BaseModel,
+    get_user_username_email_kwargs,
+    msgpack_decode,
+    msgpack_encode,
+    permission_responses,
+)
 
 User = get_typed_user_model()
 authentication_router = APIRouter(route_class=MsgpackRoute)
@@ -75,8 +82,7 @@ class LoginOut(BaseModel):
 
 
 class Authentication(BaseModel):
-    class Config:
-        ignored_types = (cached_property,)
+    model_config = ConfigDict(ignored_types=(cached_property,))
 
     response: bytes
     signature: bytes
