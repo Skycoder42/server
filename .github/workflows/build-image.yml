@@ -2,7 +2,7 @@ name: Build Docker image
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     tags: ["*"]
   workflow_dispatch:
 
@@ -33,7 +33,7 @@ jobs:
         with:
           images: etesync/server
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
             type=semver,pattern={{raw}}
             type=sha
 
