@@ -137,7 +137,10 @@ config_locations = [
     "/etc/etebase-server/etebase-server.ini",
 ]
 
-ETEBASE_CREATE_USER_FUNC = "etebase_server.django.utils.create_user_blocked"
+_etebase_create_user_func = os.environ.get(
+    "ETEBASE_CREATE_USER_FUNC", "etebase_server.django.utils.create_user_blocked"
+)
+ETEBASE_CREATE_USER_FUNC = None if _etebase_create_user_func in ("", "None") else _etebase_create_user_func
 
 # Use config file if present
 if any(os.path.isfile(x) for x in config_locations):

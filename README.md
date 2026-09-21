@@ -109,6 +109,95 @@ After this user has been created, you can use any of the EteSync apps to signup 
 email in order to set up the account. The password used at that point will be used to setup the account.
 Don't forget to set your custom server address under "Advanced".
 
+# Docker
+
+A production-oriented Docker image is provided in `docker/etebase`. It is built
+on top of a [Docker Hardened Image](https://hub.docker.com/hardened-images/catalog/dhi/python)
+(`dhi.io/python`), runs as a non-root user (UID/GID 65532) and the runtime image
+has no shell and no package manager.
+
+## Running
+
+The base images are pulled from the `dhi.io` registry, so build once with:
+
+```
+docker login dhi.io
+docker build -f docker/etebase/Dockerfile -t etesync/server .
+# or: ./docker/build.sh server <tag>      # also: server-check for clean-repo + smoke checks
+```
+
+Run it:
+
+```
+docker run -d \
+  --name etebase \
+  -p 3735:3735 \
+  -v etebase-data:/data \
+  -e ALLOWED_HOSTS=etebase.example.com \
+  etesync/server
+```
+
+On first start the container generates `/data/etebase-server.ini`, writes
+`/data/secret.txt`, applies pending database migrations and starts uvicorn.
+SQLite is the default database; PostgreSQL is supported via `DB_ENGINE=postgres`
+plus the `DATABASE_*` variables below.
+
+When mounting a host directory instead of a Docker volume, make it owned by the
+container user so it stays writable:
+
+```
+chown -R 65532:65532 /path/to/data
+```
+
+The server serves its own static files and listens on port 3735 (over 1024, so
+the unprivileged container user can bind it). Point a reverse proxy at it and
+forward the `Host` header, e.g. `proxy_set_header Host $host;`.
+
+Because the runtime image has no shell, the entrypoint is a Python script
+(`docker/etebase/entrypoint.py`). Passing extra arguments to `docker run` runs
+them instead of the server, e.g.
+
+```
+docker run --rm -it etesync/server python manage.py shell
+```
+
+### Environment variables
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1]` | Comma-separated hosts/domains the server may be served on. |
+| `DB_ENGINE` | `sqlite` | `sqlite` or `postgres`. |
+| `DATABASE_NAME` | `/data/db.sqlite3` (sqlite) / `etebase` (postgres) | Database name or sqlite path. |
+| `DATABASE_USER` | `etebase` | PostgreSQL user. |
+| `DATABASE_PASSWORD` | `etebase` | PostgreSQL password. |
+| `DATABASE_HOST` | `database` | PostgreSQL host. |
+| `DATABASE_PORT` | `5432` | PostgreSQL port. |
+| `REDIS_URI` | *(unset)* | Enables the `/api/v1/ws` websocket endpoints. |
+| `DEBUG_DJANGO` | `false` | Django debug mode; not recommended for production. |
+| `LANGUAGE_CODE` | `en-us` | |
+| `TIME_ZONE` | `UTC` | |
+| `AUTO_SIGNUP` | `false` | Allow users to sign up automatically. |
+| `AUTO_MIGRATE` | `true` | Apply database migrations on start. |
+| `SUPER_USER` | *(unset)* | Username of the Django superuser to create on first start. |
+| `SUPER_PASS` | *(generated)* | Password for the superuser. |
+| `PORT` | `3735` | Port uvicorn listens on. |
+| `DATA_DIR` | `/data` | Base data directory. |
+| `ETEBASE_EASY_CONFIG_PATH` | `/data/etebase-server.ini` | Config file location. |
+| `SECRET_FILE` | `/data/secret.txt` | File holding the Django `SECRET_KEY`. |
+| `REGEN_INI` | *(unset)* | Regenerate the config file on start. |
+
+Variables that carry secrets (`DATABASE_PASSWORD`, `SUPER_USER`, `SUPER_PASS`,
+...) also accept a `_FILE` variant that reads from a file, for use with Docker
+secrets, e.g. `DATABASE_PASSWORD_FILE=/run/secrets/db-passwd`.
+
+## Container image CI
+
+`.github/workflows/build-image.yml` builds the image for `linux/amd64` and
+`linux/arm64` with build provenance/SBOM enabled. It intentionally sets
+`push: false`: the image is only verified to build, not published. DHI
+credentials are required as `DHI_HUB_USERNAME` / `DHI_HUB_TOKEN` repository
+secrets.
+
 # `SECRET_KEY` and `secret.txt`
 
 The default configuration creates a file “`secret.txt`” in the project’s
@@ -158,6 +247,10 @@ For example, this makes sense when putting an Etebase server in production.
 However, this does come with the added risk that everybody with access to your server will be able to sign up.
 
 In order to set it up, comment out the line `ETEBASE_CREATE_USER_FUNC = "etebase_server.django.utils.create_user_blocked"` in `server/settings.py` and restart your Etebase server.
+
+The same setting can be controlled with the `ETEBASE_CREATE_USER_FUNC`
+environment variable (an empty value or `None` enables signup). The Docker
+image maps `AUTO_SIGNUP=true` to this.
 
 # License
 

@@ -7,8 +7,12 @@ Session.vim
 /.coverage
 /tmp
 /media
+/secret.txt
+/etebase-server.ini
+/etebase_server_settings.py
 
 __pycache__
+*.pyc
 .*.swp
 
 /.*
