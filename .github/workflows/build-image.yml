@@ -10,7 +10,7 @@ jobs:
   build:
     name: Build etebase server image (no push)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    environment: dhi.io
     steps:
       - uses: actions/checkout@v7
 
