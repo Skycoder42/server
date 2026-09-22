@@ -236,9 +236,22 @@ Here are the update steps:
 
 # Testing
 
-Docker images named `etesync/test-server:<version>` and `:latest` are available for testing etesync clients.
-This docker image starts a server on port 3735 that supports user signup (without email confirmation), is in debug mode (thus supporting the reset endpoint), and stores its data locally.
-It is in no way suitable for production usage, but is able to start up quickly and makes a good component of CI for etesync clients and users of those clients.
+The `etesync/server` image doubles as the development/test image: it starts a
+server on port 3735 and makes a good component of CI for etesync clients and
+users of those clients. Unlike a production deployment, test setups usually
+want signup enabled and debug mode on, which is exactly what the environment
+variables are for:
+
+```
+docker run -p 3735:3735 -e AUTO_SIGNUP=true -e DEBUG_DJANGO=true etesync/server
+```
+
+This starts a signup-enabled (no email confirmation), debug server (thus
+supporting the reset endpoint) that stores its data locally in `/data`. To also
+exercise the `/api/v1/ws` websocket endpoints, run a Redis instance and set
+`REDIS_URI` (e.g. `redis://redis` via a compose network). See the environment
+variable table above for all options. The image is not suitable for production
+usage by default.
 
 # User signup
 

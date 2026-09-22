@@ -17,7 +17,7 @@ settings.STATIC_ROOT = tempfile.mkdtemp(prefix="etebase-static-")
 # Signup is blocked by default; enable it for the tests. CREATE_USER_FUNC is
 # read lazily (and cached for the process), so this must happen before any
 # signup request. A None value falls through to User.objects.create_user (this
-# is what the docker test-server image does by commenting out the setting).
+# is what the docker production image does with AUTO_SIGNUP=true).
 settings.ETEBASE_CREATE_USER_FUNC = None
 
 # Opt-in Redis (e.g. for the websocket smoke tests): wire ETEBASE_REDIS_URI

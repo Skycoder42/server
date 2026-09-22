@@ -3,10 +3,13 @@ set -euo pipefail
 
 # Build scripts for the Etebase server Docker images.
 #
-#   ./docker/build.sh test-server [TAG]   # development/test image (docker/test-server)
 #   ./docker/build.sh server [TAG]        # production image (docker/etebase)
 #   ./docker/build.sh server-check [TAG]  # production image + clean-repo/dirty-tree
 #                                         # checks and a smoke test
+#
+# The production image also serves as the development/test image: with the
+# right environment it is what client integration tests (e.g. etebase-dart) run
+# against, so there is no separate test-server image.
 #
 # The production image pulls its base images from the `dhi.io` registry and
 # needs a login first:  docker login dhi.io
@@ -31,15 +34,6 @@ trap cleanup EXIT
 if [ -z "${TAG}" ]; then
   TAG="$(git describe --tags 2>/dev/null || git rev-parse --short HEAD)"
 fi
-
-build_test_server() {
-  echo "Building working copy to ${REGISTRY}/test-server:${TAG}"
-  docker build \
-    --build-arg ETESYNC_VERSION="${TAG}" \
-    -t "${REGISTRY}/test-server:${TAG}" \
-    -f docker/test-server/Dockerfile \
-    .
-}
 
 build_server() {
   local context="${1:-.}"
@@ -120,11 +114,10 @@ server_check() {
 }
 
 case "${COMMAND}" in
-  test-server) build_test_server ;;
   server) build_server ;;
   server-check) server_check ;;
   *)
-    echo "Unknown command '${COMMAND}' (expected: test-server | server | server-check)" >&2
+    echo "Unknown command '${COMMAND}' (expected: server | server-check)" >&2
     exit 1
     ;;
 esac
