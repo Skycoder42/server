@@ -19,3 +19,5 @@ __pycache__
 /build
 /dist
 /*.egg-info
+
+/docker/compat/data

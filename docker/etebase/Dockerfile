@@ -1,14 +1,24 @@
 # syntax=docker/dockerfile:1
 
-# Production Etebase server image, built on top of a Docker Hardened image
-# (https://hub.docker.com/hardened-images/catalog/dhi/python).
+# Production Etebase server image, by default built on top of a Docker
+# Hardened image (https://hub.docker.com/hardened-images/catalog/dhi/python).
 #
-# The runtime stage intentionally has no shell and no package manager, so all
-# setup happens in the build stage and the final image only copies artifacts
-# over and runs a Python entrypoint.
+# The base images are configurable via build args: CI builds that cannot reach
+# the dhi.io registry (or anyone who prefers) can build on the standard
+# official python image instead, e.g.:
+#   docker build --build-arg BUILDER_IMAGE=python:3.14-alpine3.24 \
+#                --build-arg RUNTIME_IMAGE=python:3.14-alpine3.24 .
+# With the DHI defaults the runtime stage has no shell and no package manager
+# and runs as nonroot 65532; with other bases that depends on the base image.
+# Either way all setup happens in the build stage and the final image only
+# copies artifacts over and runs a Python entrypoint.
+
+ARG BUILDER_IMAGE=dhi.io/python:3.14-alpine3.24-dev
+ARG RUNTIME_IMAGE=dhi.io/python:3.14-alpine3.24
 
 # Build stage: hardened Python dev variant (root, shell, apk, build tools).
-FROM dhi.io/python:3.14-alpine3.24-dev AS builder
+FROM ${BUILDER_IMAGE} AS builder
+ARG BUILDER_IMAGE
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -17,7 +27,10 @@ WORKDIR /build
 
 COPY . /build
 
-RUN python -m venv /opt/venv \
+# The standard python image has no build tools by default, so pull them in
+# unless the (pre-provisioned) DHI dev image is being used.
+RUN case "${BUILDER_IMAGE}" in dhi.io/*) ;; *) apk add --no-cache build-base libffi-dev openssl-dev ;; esac \
+    && python -m venv /opt/venv \
     && /opt/venv/bin/python -m pip install --no-cache-dir --progress-bar off \
         -r requirements.txt \
         'psycopg[binary]'
@@ -26,8 +39,8 @@ RUN mkdir -p /data/media /srv/etebase/static \
     && DJANGO_STATIC_ROOT=/srv/etebase/static /opt/venv/bin/python manage.py collectstatic --noinput
 
 # Runtime stage: hardened Python runtime variant - nonroot user 65532, no
-# shell, no package manager.
-FROM dhi.io/python:3.14-alpine3.24
+# shell, no package manager (with the DHI default base; see header).
+FROM ${RUNTIME_IMAGE}
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

@@ -13,10 +13,17 @@ set -euo pipefail
 #
 # The production image pulls its base images from the `dhi.io` registry and
 # needs a login first:  docker login dhi.io
+#
+# The base images are configurable per build (e.g. CI builds without dhi.io
+# credentials can use the standard official python image):
+#   BUILDER_IMAGE=python:3.14-alpine3.24 RUNTIME_IMAGE=python:3.14-alpine3.24 \
+#     ./docker/build.sh server <tag>
 
 REGISTRY="${REGISTRY:-etesync}"
 COMMAND="${1:-server}"
 TAG="${2:-}"
+BUILDER_IMAGE="${BUILDER_IMAGE:-}"
+RUNTIME_IMAGE="${RUNTIME_IMAGE:-}"
 
 _SMOKE_NAME=""
 _CLEAN_TMP=""
@@ -39,10 +46,24 @@ build_server() {
   local context="${1:-.}"
   local file="${context%/}/docker/etebase/Dockerfile"
   echo "Building working copy to ${REGISTRY}/server:${TAG} (context: ${context})"
-  docker build \
-    -t "${REGISTRY}/server:${TAG}" \
-    -f "${file}" \
-    "${context}"
+  local -a build_args=()
+  if [ -n "${BUILDER_IMAGE}" ]; then
+    build_args+=(--build-arg "BUILDER_IMAGE=${BUILDER_IMAGE}")
+  fi
+  if [ -n "${RUNTIME_IMAGE}" ]; then
+    build_args+=(--build-arg "RUNTIME_IMAGE=${RUNTIME_IMAGE}")
+  fi
+  if [ "${#build_args[@]}" -gt 0 ]; then
+    docker build "${build_args[@]}" \
+      -t "${REGISTRY}/server:${TAG}" \
+      -f "${file}" \
+      "${context}"
+  else
+    docker build \
+      -t "${REGISTRY}/server:${TAG}" \
+      -f "${file}" \
+      "${context}"
+  fi
 }
 
 clean_context_tar() {

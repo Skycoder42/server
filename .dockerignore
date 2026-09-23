@@ -18,3 +18,4 @@ __pycache__
 /.*
 
 /sandbox
+/docker/compat/data

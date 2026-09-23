@@ -1,0 +1,33 @@
+# Shared compose base for the e2e compatibility test. Combines with
+# compose.victorrds.yaml (phase 1) or compose.fork.yaml (phases 2+3) via
+# `docker compose -p etebase-compat -f compose.yaml -f <override> …`.
+services:
+  etebase:
+    image: ${ETEBASE_IMAGE:-docker.io/victorrds/etesync:latest}
+    container_name: etebase-compat
+    restart: unless-stopped
+    depends_on:
+      - redis
+    environment:
+      AUTO_SIGNUP: "true"
+      ALLOWED_HOSTS: "127.0.0.1,localhost,[::1]"
+      REDIS_URI: "redis://redis:6379"
+    ports:
+      - "127.0.0.1:3785:3735"
+    volumes:
+      - compat_data:/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:3735/api/v1/authentication/is_etebase/', timeout=3)\""]
+      interval: 3s
+      timeout: 5s
+      start_period: 10s
+      retries: 40
+
+  redis:
+    image: docker.io/library/redis:8-alpine
+    container_name: etebase-compat-redis
+    restart: unless-stopped
+
+volumes:
+  compat_data:

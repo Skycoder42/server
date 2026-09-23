@@ -120,6 +120,39 @@ jobs:
             exit 0
           fi
 
+  compat:
+    name: compat e2e
+    runs-on: ubuntu-latest
+    needs:
+      - lint
+      - test
+      - test-redis
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: Set up driver venv
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install -r requirements.txt
+
+      - name: Build the fork image (standard python base)
+        env:
+          BUILDER_IMAGE: python:3.14-alpine3.24
+          RUNTIME_IMAGE: python:3.14-alpine3.24
+        run: ./docker/build.sh server compat-ci
+
+      - name: Run the compatibility suite
+        env:
+          ETEBASE_IMAGE_LEGACY: docker.io/victorrds/etesync:latest
+          ETEBASE_IMAGE_NEW: etesync/server:compat-ci
+        run: ./docker/compat/run_compat_test.sh --clean
+
   docker:
     name: Build docker image
     runs-on: ubuntu-latest
@@ -127,6 +160,7 @@ jobs:
       - lint
       - test
       - test-redis
+      - compat
     environment: dhi.io
     if: github.event_name != 'pull_request'
     steps:

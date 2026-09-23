@@ -1,0 +1,5 @@
+# Phase 1 (seed): upstream-ish published image from Docker Hub.
+services:
+  etebase:
+    image: ${ETEBASE_IMAGE_LEGACY:-docker.io/victorrds/etesync:latest}
+    pull_policy: always
