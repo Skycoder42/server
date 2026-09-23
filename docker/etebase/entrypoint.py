@@ -6,6 +6,16 @@ classic shell script: it generates the `etebase-server.ini` configuration from
 the environment (or uses an existing one), applies pending migrations, can
 create a superuser, and finally starts uvicorn. It refuses to run as root.
 
+Two extra modes back the upgrade path from an image that wrote the `/data`
+volume as a different user (e.g. uid 373 for the older victorrds/etesync image):
+
+* `ETEBASE_FIX_OWNERSHIP=1` (requires running as root, `--user 0:0`) recursively
+  chowns the data directory to the server's nonroot user and exits — the one-off
+  step that must happen once when migrating an existing volume.
+* On a normal start, the entrypoint detects that the data directory is not
+  writable by the current (nonroot) user and aborts with that fix command
+  instead of failing cryptically on the first write.
+
 Environment variables follow the docker-etebase conventions
 (https://github.com/victor-rds/docker-etebase). Variables that take secrets
 also support a `_FILE` variant for Docker secrets, e.g. `DATABASE_PASSWORD`
@@ -22,6 +32,12 @@ APP_DIR = "/app"
 DATA_DIR = os.environ.get("DATA_DIR", "/data")
 CONFIG_PATH = os.environ.get("ETEBASE_EASY_CONFIG_PATH", "/data/etebase-server.ini")
 MANAGE = os.path.join(APP_DIR, "manage.py")
+
+# User the server normally runs as (matches `USER 65532:65532` in the
+# Dockerfile); overridable for rootless setups that remap UIDs.
+RUN_UID = int(os.environ.get("ETEBASE_UID", "65532"))
+RUN_GID = int(os.environ.get("ETEBASE_GID", "65532"))
+FIX_OWNERSHIP = os.environ.get("ETEBASE_FIX_OWNERSHIP", "").lower() in ("true", "1", "yes")
 
 
 def log(message):
@@ -114,12 +130,51 @@ def is_writable(path):
     return os.path.isdir(path) and os.access(path, os.W_OK)
 
 
+def fix_data_ownership():
+    """Recursively chown DATA_DIR to the server's nonroot user.
+
+    Only meaningful when running as root (see ETEBASE_FIX_OWNERSHIP). Symlinks
+    are chowned themselves, never followed, so nothing outside /data can be
+    touched.
+    """
+    ensure_dir(DATA_DIR, "data")
+    log(f"fixing ownership of {DATA_DIR} to {RUN_UID}:{RUN_GID}")
+    os.chown(DATA_DIR, RUN_UID, RUN_GID, follow_symlinks=False)
+    for root, dirs, files in os.walk(DATA_DIR):
+        dirs[:] = [d for d in dirs if not os.path.islink(os.path.join(root, d))]
+        for name in dirs:
+            os.chown(os.path.join(root, name), RUN_UID, RUN_GID, follow_symlinks=False)
+        for name in files:
+            os.chown(os.path.join(root, name), RUN_UID, RUN_GID, follow_symlinks=False)
+
+
+def assert_data_writable():
+    """Abort with the ownership fix command if /data is not usable by us."""
+    if os.access(DATA_DIR, os.W_OK) and os.access(DATA_DIR, os.X_OK):
+        return
+    error(
+        f"data directory {DATA_DIR} is not writable by uid {RUN_UID} (it is likely "
+        "owned by another user, e.g. from a previous etesync/victorrds image).\n"
+        "Fix the volume ownership once, e.g. with:\n"
+        f"  docker run --rm --user 0:0 -e ETEBASE_FIX_OWNERSHIP=1 -v <volume>:{DATA_DIR} <this image>\n"
+        f"  (or: docker run --rm -v <volume>:{DATA_DIR} alpine chown -R {RUN_UID}:{RUN_GID} {DATA_DIR})"
+    )
+
+
 def main():
+    if FIX_OWNERSHIP:
+        if os.geteuid() != 0:
+            error("ETEBASE_FIX_OWNERSHIP requires running as root, e.g. docker run --user 0:0 <this image>")
+        fix_data_ownership()
+        log("ownership fixed; exiting (start the server normally as the nonroot user)")
+        sys.exit(0)
+
     if os.geteuid() == 0:
         error("refusing to run as root; use the image's default nonroot user (65532)")
 
     ensure_dir(DATA_DIR, "data")
     ensure_dir(os.path.dirname(CONFIG_PATH), "config")
+    assert_data_writable()
 
     regen = os.environ.get("REGEN_INI", "") == "true"
     if os.path.isfile(CONFIG_PATH) and not regen:

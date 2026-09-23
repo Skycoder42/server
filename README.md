@@ -161,6 +161,29 @@ them instead of the server, e.g.
 docker run --rm -it etesync/server python manage.py shell
 ```
 
+## Migrating from the `victorrds/etesync` image
+
+That older image stores its data as UID/GID 373, while this one runs as 65532.
+To upgrade a deployment in place and keep the existing data volume:
+
+```
+docker rm -f etebase                                          # 1. stop the old container
+docker run --rm --user 0:0 -e ETEBASE_FIX_OWNERSHIP=1 \
+  -v etebase-data:/data etesync/server                        # 2. fix volume ownership
+docker run -d --name etebase -p 3735:3735 \
+  -v etebase-data:/data -e ALLOWED_HOSTS=etebase.example.com etesync/server
+                                                              # 3. start the new image
+```
+
+On the first start of the new image the entrypoint reuses the existing
+`/data/etebase-server.ini` and `/data/secret.txt` (accounts and data are
+preserved) and applies any pending schema migrations before serving. If step 2
+is missed, the entrypoint detects that `/data` is not writable by its user and
+aborts with the exact fix command instead of a cryptic database error.
+
+The full migration and data-continuation flow is verified by the
+`docker/compat` e2e suite (see `docker/compat/README.md`).
+
 ### Environment variables
 
 | Variable | Default | Description |
@@ -185,6 +208,8 @@ docker run --rm -it etesync/server python manage.py shell
 | `ETEBASE_EASY_CONFIG_PATH` | `/data/etebase-server.ini` | Config file location. |
 | `SECRET_FILE` | `/data/secret.txt` | File holding the Django `SECRET_KEY`. |
 | `REGEN_INI` | *(unset)* | Regenerate the config file on start. |
+| `ETEBASE_FIX_OWNERSHIP` | *(unset)* | One-off root-only mode: recursively chowns `DATA_DIR` to the container user and exits (see migration above). |
+| `ETEBASE_UID` / `ETEBASE_GID` | `65532` | The user the server runs as; override for rootless setups that remap UIDs. |
 
 Variables that carry secrets (`DATABASE_PASSWORD`, `SUPER_USER`, `SUPER_PASS`,
 ...) also accept a `_FILE` variant that reads from a file, for use with Docker
@@ -273,7 +298,7 @@ A quick summary can be found [on tldrlegal](https://tldrlegal.com/license/gnu-af
 
 ## Commercial licensing
 
-For commercial licensing options, contact license@etebase.com 
+For commercial licensing options, contact license@etebase.com
 
 # Financially Supporting Etebase
 

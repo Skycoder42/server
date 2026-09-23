@@ -11,9 +11,13 @@ echo "Stopping the victorrds-based server (volume is preserved)"
 docker rm -f "${COMPAT_CONTAINER}" >/dev/null 2>&1 || true
 
 # The victorrds image runs as 373:373, the fork image as 65532:65532. Fix the
-# volume ownership from inside a root container (works under rootless podman).
-echo "Setting volume ownership to 65532:65532:"
-docker run --rm -v "${COMPAT_VOLUME}:/data" docker.io/library/alpine:3 chown -R 65532:65532 /data
+# volume ownership using the fork image's own root-only fix-ownership mode
+# (entrypoint ETEBASE_FIX_OWNERSHIP=1) — no external image needed.
+echo "Setting volume ownership to 65532:65532 (using the fork image itself):"
+docker run --rm --user 0:0 \
+  -e ETEBASE_FIX_OWNERSHIP=1 \
+  -v "${COMPAT_VOLUME}:/data" \
+  "${ETEBASE_IMAGE_NEW}"
 
 compose -f "${COMPAT_DIR}/compose.fork.yaml" up -d etebase
 wait_for_ready

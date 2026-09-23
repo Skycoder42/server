@@ -16,9 +16,11 @@ It runs in three sequential phases, each its own script:
    a bunch of state-machine negatives (stale etag/stoken, wrong password,
    non-admin access, …). Everything is recorded to `data/snapshot.json`.
 2. **`phase2_switch.sh`** — stops the server, replaces the image with the
-   locally built fork image (keeps the `/data` volume untouched, fixes its
-   ownership 373→65532), and starts it again. The fork's entrypoint then runs
-   `migrate` over the existing database — the real schema-compatibility check.
+   locally built fork image (keeps the `/data` volume untouched), fixes its
+   ownership 373→65532 via the fork image's own `ETEBASE_FIX_OWNERSHIP` mode
+   (no external image needed), and starts it again. The fork's entrypoint then
+   runs `migrate` over the existing database — the real schema-compatibility
+   check.
 3. **`phase3_verify.sh`** — re-logs-in every user, asserts the read-back of
    every collection/item/revision/chunk/member/invitation matches the phase-1
    snapshot exactly (no data loss), then *continues* on the data (item updates,
@@ -89,7 +91,12 @@ the build.
 ## Notes / troubleshooting
 
 - The victorrds image runs as UID 373, the fork image as 65532. Phase 2 fixes
-  volume ownership with a one-off `alpine chown -R 65532:65532 /data`.
+  volume ownership with the fork image's own root-only mode:
+  `docker run --rm --user 0:0 -e ETEBASE_FIX_OWNERSHIP=1 -v <volume>:/data <fork image>`
+  (this was previously done with a one-off `alpine chown -R 65532:65532 /data`,
+  which still works as a fallback). The fork entrypoint aborts with that
+  command when it detects a non-writable `/data`, so a missed chown surfaces as
+  a clear error instead of a confusing DB failure.
 - Port 3785 avoids clashing with the etebase-dart integration stack on 3735.
 - Everything is wired for signup + Redis (websocket) in both phases.
 - Reset fully: `docker compose -p etebase-compat down -v` or
