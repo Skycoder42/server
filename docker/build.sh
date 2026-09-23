@@ -18,8 +18,11 @@ set -euo pipefail
 # credentials can use the standard official python image):
 #   BUILDER_IMAGE=python:3.14-alpine3.24 RUNTIME_IMAGE=python:3.14-alpine3.24 \
 #     ./docker/build.sh server <tag>
+#
+# The produced image name is configurable too, e.g. to point at your own
+# registry:  IMAGE=registry.example.com/skycoder42/etebase-server
 
-REGISTRY="${REGISTRY:-etesync}"
+IMAGE="${IMAGE:-skycoder42/etebase-server}"
 COMMAND="${1:-server}"
 TAG="${2:-}"
 BUILDER_IMAGE="${BUILDER_IMAGE:-}"
@@ -45,7 +48,7 @@ fi
 build_server() {
   local context="${1:-.}"
   local file="${context%/}/docker/etebase/Dockerfile"
-  echo "Building working copy to ${REGISTRY}/server:${TAG} (context: ${context})"
+  echo "Building working copy to ${IMAGE}:${TAG} (context: ${context})"
   local -a build_args=()
   if [ -n "${BUILDER_IMAGE}" ]; then
     build_args+=(--build-arg "BUILDER_IMAGE=${BUILDER_IMAGE}")
@@ -55,12 +58,12 @@ build_server() {
   fi
   if [ "${#build_args[@]}" -gt 0 ]; then
     docker build "${build_args[@]}" \
-      -t "${REGISTRY}/server:${TAG}" \
+      -t "${IMAGE}:${TAG}" \
       -f "${file}" \
       "${context}"
   else
     docker build \
-      -t "${REGISTRY}/server:${TAG}" \
+      -t "${IMAGE}:${TAG}" \
       -f "${file}" \
       "${context}"
   fi
@@ -82,11 +85,11 @@ assert_no_secret() {
 
 smoke_test_server() {
   _SMOKE_NAME="etebase-server-smoke"
-  echo "Smoke test: starting ${REGISTRY}/server:${TAG} on 127.0.0.1:3735"
+  echo "Smoke test: starting ${IMAGE}:${TAG} on 127.0.0.1:3735"
   docker rm -f "${_SMOKE_NAME}" >/dev/null 2>&1 || true
   docker run -d --name "${_SMOKE_NAME}" \
     -p 127.0.0.1:3735:3735 \
-    "${REGISTRY}/server:${TAG}"
+    "${IMAGE}:${TAG}"
 
   local healthy=""
   for _ in $(seq 1 30); do
@@ -128,7 +131,7 @@ server_check() {
 
   echo "Verifying secrets from a dirty working tree are not baked in"
   build_server "."
-  assert_no_secret "${REGISTRY}/server:${TAG}"
+  assert_no_secret "${IMAGE}:${TAG}"
   echo "OK: no secret.txt / db.sqlite3 baked into the image"
 
   smoke_test_server

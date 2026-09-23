@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Phase 2: swap the image from victorrds/etesync to the locally built
-# etesync/server fork, keeping all data in the volume untouched.
+# etesync server fork, keeping all data in the volume untouched.
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 

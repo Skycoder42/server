@@ -3,7 +3,7 @@
 Verifies that data produced by the latest published
 [`victorrds/etesync`](https://hub.docker.com/r/victorrds/etesync) image keeps
 working, losslessly, on this fork's production image
-(`etesync/server:…`, built with `./docker/build.sh server`).
+(`skycoder42/etebase-server:…`, built with `./docker/build.sh server`).
 
 It runs in three sequential phases, each its own script:
 
@@ -34,7 +34,7 @@ It runs in three sequential phases, each its own script:
 
 - A working `docker` CLI (docker or podman alias, rootless is fine).
 - The fork image built: `./docker/build.sh server` → the `ETEBASE_IMAGE_NEW`
-  (default `etesync/server:v0.14.2-10-g4690e0c`).
+  (default `skycoder42/etebase-server:v0.14.2-10-g4690e0c`).
 - `curl` and a Python interpreter with `requirements.txt` installed. The
   scripts default to the repo venv (`.venv/bin/python`, per AGENTS.md); set
   `PYTHON=/path/to/python` to use a different one.
@@ -63,7 +63,7 @@ Individual phases (data survives between them):
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `ETEBASE_IMAGE_LEGACY` | `victorrds/etesync:latest` | Phase-1 image (pulled) |
-| `ETEBASE_IMAGE_NEW` | `etesync/server:v0.14.2-10-g4690e0c` | Phases 2–3 image (local) |
+| `ETEBASE_IMAGE_NEW` | `skycoder42/etebase-server:v0.14.2-10-g4690e0c` | Phases 2–3 image (local) |
 | `COMPAT_PORT` | `3785` | Host port the servers listen on |
 | `PYTHON` | `$REPO_ROOT/.venv/bin/python` | Interpreter running the driver |
 
@@ -80,7 +80,7 @@ reproduce the CI build with:
 ```
 BUILDER_IMAGE=python:3.14-alpine3.24 RUNTIME_IMAGE=python:3.14-alpine3.24 \
   ./docker/build.sh server compat-ci
-ETEBASE_IMAGE_NEW=etesync/server:compat-ci ./docker/compat/run_compat_test.sh
+ETEBASE_IMAGE_NEW=skycoder42/etebase-server:compat-ci ./docker/compat/run_compat_test.sh
 ```
 
 The `docker/etebase/Dockerfile` accepts `BUILDER_IMAGE` / `RUNTIME_IMAGE`

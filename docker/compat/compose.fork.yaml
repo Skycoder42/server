@@ -1,5 +1,5 @@
 # Phases 2+3 (continue): the locally built production image.
 services:
   etebase:
-    image: ${ETEBASE_IMAGE_NEW:-etesync/server:v0.14.2-10-g4690e0c}
+    image: ${ETEBASE_IMAGE_NEW:-skycoder42/etebase-server:v0.14.2-10-g4690e0c}
     pull_policy: never

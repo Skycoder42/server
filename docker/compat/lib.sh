@@ -8,7 +8,7 @@ REPO_ROOT="$(cd "${COMPAT_DIR}/../.." && pwd)"
 export COMPAT_DIR REPO_ROOT
 export COMPAT_PORT="${COMPAT_PORT:-3785}"
 export ETEBASE_IMAGE_LEGACY="${ETEBASE_IMAGE_LEGACY:-docker.io/victorrds/etesync:latest}"
-export ETEBASE_IMAGE_NEW="${ETEBASE_IMAGE_NEW:-etesync/server:v0.14.2-10-g4690e0c}"
+export ETEBASE_IMAGE_NEW="${ETEBASE_IMAGE_NEW:-skycoder42/etebase-server:v0.14.2-10-g4690e0c}"
 # The Python interpreter that runs the driver (defaults to the venv from
 # AGENTS.md; CI overrides this with its own interpreter).
 PYTHON="${PYTHON:-${REPO_ROOT}/.venv/bin/python}"

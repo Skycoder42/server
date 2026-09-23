@@ -122,7 +122,7 @@ The base images are pulled from the `dhi.io` registry, so build once with:
 
 ```
 docker login dhi.io
-docker build -f docker/etebase/Dockerfile -t etesync/server .
+docker build -f docker/etebase/Dockerfile -t skycoder42/etebase-server .
 # or: ./docker/build.sh server <tag>      # also: server-check for clean-repo + smoke checks
 ```
 
@@ -134,7 +134,7 @@ docker run -d \
   -p 3735:3735 \
   -v etebase-data:/data \
   -e ALLOWED_HOSTS=etebase.example.com \
-  etesync/server
+  skycoder42/etebase-server
 ```
 
 On first start the container generates `/data/etebase-server.ini`, writes
@@ -158,7 +158,7 @@ Because the runtime image has no shell, the entrypoint is a Python script
 them instead of the server, e.g.
 
 ```
-docker run --rm -it etesync/server python manage.py shell
+docker run --rm -it skycoder42/etebase-server python manage.py shell
 ```
 
 ## Migrating from the `victorrds/etesync` image
@@ -169,9 +169,9 @@ To upgrade a deployment in place and keep the existing data volume:
 ```
 docker rm -f etebase                                          # 1. stop the old container
 docker run --rm --user 0:0 -e ETEBASE_FIX_OWNERSHIP=1 \
-  -v etebase-data:/data etesync/server                        # 2. fix volume ownership
+  -v etebase-data:/data skycoder42/etebase-server             # 2. fix volume ownership
 docker run -d --name etebase -p 3735:3735 \
-  -v etebase-data:/data -e ALLOWED_HOSTS=etebase.example.com etesync/server
+  -v etebase-data:/data -e ALLOWED_HOSTS=etebase.example.com skycoder42/etebase-server
                                                               # 3. start the new image
 ```
 
@@ -261,14 +261,14 @@ Here are the update steps:
 
 # Testing
 
-The `etesync/server` image doubles as the development/test image: it starts a
+The `skycoder42/etebase-server` image doubles as the development/test image: it starts a
 server on port 3735 and makes a good component of CI for etesync clients and
 users of those clients. Unlike a production deployment, test setups usually
 want signup enabled and debug mode on, which is exactly what the environment
 variables are for:
 
 ```
-docker run -p 3735:3735 -e AUTO_SIGNUP=true -e DEBUG_DJANGO=true etesync/server
+docker run -p 3735:3735 -e AUTO_SIGNUP=true -e DEBUG_DJANGO=true skycoder42/etebase-server
 ```
 
 This starts a signup-enabled (no email confirmation), debug server (thus
