@@ -101,7 +101,7 @@ smoke_test_server() {
   done
   if [ -z "${healthy}" ]; then
     echo "Smoke test failed: server did not become healthy" >&2
-    docker logs "${name}" >&2
+    docker logs "${_SMOKE_NAME}" >&2
     exit 1
   fi
   echo "OK: / served"

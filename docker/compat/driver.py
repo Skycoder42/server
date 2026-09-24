@@ -176,11 +176,18 @@ async def add_item(owner: str, uid: str, item_uid: str, *, meta: bytes = b"", co
     col(uid)["revisions"][item_uid] = [rev_uid]
 
 
-async def update_item(owner: str, uid: str, item_uid: str, rev_uid: str, *, deleted: bool = False, content: bytes = b""):
+async def update_item(
+    owner: str, uid: str, item_uid: str, rev_uid: str, *, deleted: bool = False, content: bytes = b""
+):
     c = CTX.clients[owner]
     listing = msgpack_unpack((await c.item_list(uid)).content)
     current = next(x for x in listing["data"] if x["uid"] == item_uid)
-    revision = {"uid": rev_uid, "meta": current["content"]["meta"], "deleted": deleted, "chunks": [[f"chunk-{item_uid}-{rev_uid}", content]]}
+    revision = {
+        "uid": rev_uid,
+        "meta": current["content"]["meta"],
+        "deleted": deleted,
+        "chunks": [[f"chunk-{item_uid}-{rev_uid}", content]],
+    }
     resp = await c.item_transaction(
         uid, [pc.make_item(item_uid, etag=current["content"]["uid"], revision=revision)], stoken=listing["stoken"]
     )
@@ -208,9 +215,7 @@ async def invite_and_accept(owner: str, uid: str, invitee: str, *, access_level:
     resp = await c.invite(uid, invitee, access_level=access_level, uid=inv_uid)
     require(resp, 201, what=f"invite {invitee} to {uid}")
     key = hashlib.sha256(f"{uid}:{invitee}".encode()).digest()
-    resp = await invitee_client.incoming_accept(
-        inv_uid, collection_type=member_type(uid, invitee), encryption_key=key
-    )
+    resp = await invitee_client.incoming_accept(inv_uid, collection_type=member_type(uid, invitee), encryption_key=key)
     require(resp, 201, what=f"{invitee} accepts {inv_uid}")
     await refresh_members(owner, uid)
     return inv_uid
@@ -233,7 +238,8 @@ async def soft_delete_collection(owner: str, uid: str, rev_uid: str):
     item = raw["item"]
     revision = {"uid": rev_uid, "meta": item["content"]["meta"], "deleted": True, "chunks": item["content"]["chunks"]}
     resp = await c.item_transaction(
-        uid, [pc.make_item(uid, version=item["version"], etag=item["content"]["uid"], revision=revision)],
+        uid,
+        [pc.make_item(uid, version=item["version"], etag=item["content"]["uid"], revision=revision)],
         stoken=raw["stoken"],
     )
     require(resp, 200, what=f"soft-delete collection {uid}")
@@ -274,7 +280,12 @@ async def seed_negative_checks():
     # duplicate signup
     require(await c["alice"].signup(), 409, "duplicate signup", "user_exists")
     # wrong password / unknown user login
-    require(await (await make_client("alice", "wrong-" + PASSWORD)).login(), 401, "login wrong password", "login_bad_signature")
+    require(
+        await (await make_client("alice", "wrong-" + PASSWORD)).login(),
+        401,
+        "login wrong password",
+        "login_bad_signature",
+    )
     require(await (await make_client("nobody-knows-this-user")).login(), 401, "login unknown user", "user_not_found")
     # logout invalidates the token
     carol_clone = await make_client("carol")
@@ -289,7 +300,9 @@ async def seed_negative_checks():
         "not_supported",
     )
     # host mismatch login is rejected outside debug mode
-    challenge = msgpack_unpack((await c["alice"]._request("POST", f"{pc.AUTH_PATH}/login_challenge/", data={"username": "alice"})).content)
+    challenge = msgpack_unpack(
+        (await c["alice"]._request("POST", f"{pc.AUTH_PATH}/login_challenge/", data={"username": "alice"})).content
+    )
     login_key = pc.derive_login_signing_key(PASSWORD)
     message = pc.msgpack_pack(
         {"username": "alice", "challenge": challenge["challenge"], "host": "some-other-host", "action": "login"}
@@ -321,7 +334,9 @@ async def seed_negative_checks():
     # stale etag transaction rejected
     listing = msgpack_unpack((await c["alice"].item_list("col-calendar")).content)
     stale = pc.make_item(
-        "cal-event-1", etag="rev-too-old", revision={"uid": "rev-stale", "meta": b"", "deleted": False, "chunks": [["chunk-stale", b"x"]]}
+        "cal-event-1",
+        etag="rev-too-old",
+        revision={"uid": "rev-stale", "meta": b"", "deleted": False, "chunks": [["chunk-stale", b"x"]]},
     )
     resp = await c["alice"].item_transaction("col-calendar", [stale], stoken=listing["stoken"])
     body = msgpack_unpack(resp.content)
@@ -338,7 +353,12 @@ async def seed_negative_checks():
         "stale_stoken",
     )
     # missing chunk -> 404
-    require(await c["alice"].chunk_download("col-calendar", "cal-event-1", "chunk-nope"), 404, "missing chunk", "does_not_exist")
+    require(
+        await c["alice"].chunk_download("col-calendar", "cal-event-1", "chunk-nope"),
+        404,
+        "missing chunk",
+        "does_not_exist",
+    )
 
 
 async def seed():
@@ -372,7 +392,9 @@ async def seed():
 
     # ---- pagination on a small collection ------------------------------
     await create_collection("alice", "col-page", "notes", content=b"pagination")
-    CTX.snap["page_old_stoken"] = msgpack_unpack((await CTX.clients["alice"].collection_get("col-page")).content)["stoken"]
+    CTX.snap["page_old_stoken"] = msgpack_unpack((await CTX.clients["alice"].collection_get("col-page")).content)[
+        "stoken"
+    ]
     for i in range(5):
         await add_item("alice", "col-page", f"page-{i}", content=f"page item {i}".encode())
 
@@ -396,13 +418,19 @@ async def seed():
     await invite_and_accept("alice", "col-notes", "bob", access_level=2)
     raw = msgpack_unpack((await CTX.clients["bob"].collection_get("col-notes")).content)
     require(
-        await CTX.clients["bob"].item_batch("col-notes", [pc.make_item("bob-note-1", content=b"note from bob")], stoken=raw["stoken"]),
+        await CTX.clients["bob"].item_batch(
+            "col-notes", [pc.make_item("bob-note-1", content=b"note from bob")], stoken=raw["stoken"]
+        ),
         200,
         "bob writes to col-notes",
     )
     await refresh_items("alice", "col-notes")
     # carol declines a pending invitation (a "minus" state that must persist)
-    require(await CTX.clients["alice"].invite("col-notes", "carol", access_level=0, uid="inv-alice-carol-col-notes"), 201, "invite carol (declined)")
+    require(
+        await CTX.clients["alice"].invite("col-notes", "carol", access_level=0, uid="inv-alice-carol-col-notes"),
+        201,
+        "invite carol (declined)",
+    )
     require(await CTX.clients["carol"].incoming_delete("inv-alice-carol-col-notes"), 204, "carol declines invitation")
     CTX.snap["declined"].append("inv-alice-carol-col-notes")
 
@@ -492,7 +520,9 @@ async def readback_snapshot():
             continue
 
         members = msgpack_unpack((await c.member_list(uid)).content)["data"]
-        assert_same(f"readback {uid}.members", {m["username"]: m["accessLevel"] for m in members}, snap.get("members", {}))
+        assert_same(
+            f"readback {uid}.members", {m["username"]: m["accessLevel"] for m in members}, snap.get("members", {})
+        )
         check(in_list, f"readback {uid}: missing from the collection list of {owner}")
 
         fetched = msgpack_unpack((await c.collection_get(uid)).content)
@@ -561,7 +591,12 @@ async def readback_users_and_invites():
         check(all(x["uid"] != uid for x in outgoing), f"readback canceled {uid} absent from outgoing")
         check(all(x["uid"] != uid for x in incoming), f"readback canceled {uid} absent from incoming")
 
-    require(await CTX.clients["dave"].collection_get("col-shared"), 404, "readback dave access while pending", "does_not_exist")
+    require(
+        await CTX.clients["dave"].collection_get("col-shared"),
+        404,
+        "readback dave access while pending",
+        "does_not_exist",
+    )
 
     for chunk_uid, payload in CTX.snap["chunks"].items():
         if chunk_uid.startswith("chunk-cal"):
@@ -589,10 +624,17 @@ async def continue_and_check():
     # 1. update cal-event-1 (v2 -> v3) and verify the new content is served
     listing = msgpack_unpack((await alice.item_list("col-calendar")).content)
     current = next(x for x in listing["data"] if x["uid"] == "cal-event-1")
-    revision = {"uid": "rev-cal-event-1-3", "meta": b"", "deleted": False, "chunks": [["chunk-cal-1-v3", b"event 1 v3"]]}
+    revision = {
+        "uid": "rev-cal-event-1-3",
+        "meta": b"",
+        "deleted": False,
+        "chunks": [["chunk-cal-1-v3", b"event 1 v3"]],
+    }
     require(
         await alice.item_transaction(
-            "col-calendar", [pc.make_item("cal-event-1", etag=current["content"]["uid"], revision=revision)], stoken=listing["stoken"]
+            "col-calendar",
+            [pc.make_item("cal-event-1", etag=current["content"]["uid"], revision=revision)],
+            stoken=listing["stoken"],
         ),
         200,
         "continue: cal-event-1 -> v3",
@@ -608,7 +650,17 @@ async def continue_and_check():
     require(
         await alice.item_batch(
             "col-calendar",
-            [pc.make_item("cal-event-3", revision={"uid": "rev-cal-event-3", "meta": b"", "deleted": False, "chunks": [["chunk-cal-3", b"event 3"]]})],
+            [
+                pc.make_item(
+                    "cal-event-3",
+                    revision={
+                        "uid": "rev-cal-event-3",
+                        "meta": b"",
+                        "deleted": False,
+                        "chunks": [["chunk-cal-3", b"event 3"]],
+                    },
+                )
+            ],
             stoken=raw["stoken"],
         ),
         200,
@@ -619,19 +671,44 @@ async def continue_and_check():
     require(
         await alice.item_transaction(
             "col-calendar",
-            [pc.make_item("cal-event-3", etag=etag3, revision={"uid": "rev-cal-event-3-del", "meta": b"", "deleted": True, "chunks": [["chunk-cal-3", b"event 3"]]})],
+            [
+                pc.make_item(
+                    "cal-event-3",
+                    etag=etag3,
+                    revision={
+                        "uid": "rev-cal-event-3-del",
+                        "meta": b"",
+                        "deleted": True,
+                        "chunks": [["chunk-cal-3", b"event 3"]],
+                    },
+                )
+            ],
             stoken=listing["stoken"],
         ),
         200,
         "continue: trash cal-event-3",
     )
     listing = msgpack_unpack((await alice.item_list("col-calendar")).content)
-    check(next(x for x in listing["data"] if x["uid"] == "cal-event-3")["content"]["deleted"] is True, "continue: cal-event-3 in trash")
+    check(
+        next(x for x in listing["data"] if x["uid"] == "cal-event-3")["content"]["deleted"] is True,
+        "continue: cal-event-3 in trash",
+    )
     etag3 = next(x for x in listing["data"] if x["uid"] == "cal-event-3")["content"]["uid"]
     require(
         await alice.item_transaction(
             "col-calendar",
-            [pc.make_item("cal-event-3", etag=etag3, revision={"uid": "rev-cal-event-3-restore", "meta": b"", "deleted": False, "chunks": [["chunk-cal-3", b"event 3"]]})],
+            [
+                pc.make_item(
+                    "cal-event-3",
+                    etag=etag3,
+                    revision={
+                        "uid": "rev-cal-event-3-restore",
+                        "meta": b"",
+                        "deleted": False,
+                        "chunks": [["chunk-cal-3", b"event 3"]],
+                    },
+                )
+            ],
             stoken=listing["stoken"],
         ),
         200,
@@ -641,22 +718,33 @@ async def continue_and_check():
     # 3. brand new collection, invite, accept, write as the new member
     require(
         await alice.create_collection(
-            "col-new", collection_type=collection_type("col-new"), collection_key=collection_key("col-new"), content=b"fresh collection"
+            "col-new",
+            collection_type=collection_type("col-new"),
+            collection_key=collection_key("col-new"),
+            content=b"fresh collection",
         ),
         201,
         "continue: create col-new",
     )
-    require(await alice.invite("col-new", "carol", access_level=2, uid="inv-alice-carol-col-new"), 201, "continue: invite carol to col-new")
+    require(
+        await alice.invite("col-new", "carol", access_level=2, uid="inv-alice-carol-col-new"),
+        201,
+        "continue: invite carol to col-new",
+    )
     require(
         await carol.incoming_accept(
-            "inv-alice-carol-col-new", collection_type=member_type("col-new", "carol"), encryption_key=collection_key("col-new")
+            "inv-alice-carol-col-new",
+            collection_type=member_type("col-new", "carol"),
+            encryption_key=collection_key("col-new"),
         ),
         201,
         "continue: carol accepts col-new",
     )
     raw = msgpack_unpack((await carol.collection_get("col-new")).content)
     require(
-        await carol.item_batch("col-new", [pc.make_item("carol-item", content=b"carol's first write")], stoken=raw["stoken"]),
+        await carol.item_batch(
+            "col-new", [pc.make_item("carol-item", content=b"carol's first write")], stoken=raw["stoken"]
+        ),
         200,
         "continue: carol writes into col-new",
     )
@@ -664,21 +752,29 @@ async def continue_and_check():
     # 4. accept the two invitations left pending in phase 1
     require(
         await dave.incoming_accept(
-            "inv-alice-dave-col-shared", collection_type=member_type("col-shared", "dave"), encryption_key=collection_key("col-shared")
+            "inv-alice-dave-col-shared",
+            collection_type=member_type("col-shared", "dave"),
+            encryption_key=collection_key("col-shared"),
         ),
         201,
         "continue: dave accepts pending col-shared invite",
     )
     require(
         await bob.incoming_accept(
-            "inv-carol-bob-col-carol", collection_type=member_type("col-carol", "bob"), encryption_key=collection_key("col-carol")
+            "inv-carol-bob-col-carol",
+            collection_type=member_type("col-carol", "bob"),
+            encryption_key=collection_key("col-carol"),
         ),
         201,
         "continue: bob accepts pending col-carol invite",
     )
     raw = msgpack_unpack((await bob.collection_get("col-carol")).content)
     require(
-        await bob.item_batch("col-carol", [pc.make_item("bob-in-col-carol", content=b"bob writes to carol's collection")], stoken=raw["stoken"]),
+        await bob.item_batch(
+            "col-carol",
+            [pc.make_item("bob-in-col-carol", content=b"bob writes to carol's collection")],
+            stoken=raw["stoken"],
+        ),
         200,
         "continue: bob writes into col-carol",
     )
@@ -694,7 +790,9 @@ async def continue_and_check():
     require(await alice.member_patch("col-shared", "carol", 2), 204, "continue: upgrade carol to RW in col-shared")
     raw = msgpack_unpack((await alice.collection_get("col-shared")).content)
     require(
-        await carol.item_batch("col-shared", [pc.make_item("carol-now-rw", content=b"after upgrade")], stoken=raw["stoken"]),
+        await carol.item_batch(
+            "col-shared", [pc.make_item("carol-now-rw", content=b"after upgrade")], stoken=raw["stoken"]
+        ),
         200,
         "continue: carol writes after upgrade",
     )
@@ -707,8 +805,15 @@ async def continue_and_check():
 
     # 7. password change: new works, old stops working
     require(await dave.change_password("a brand new dave password"), 204, "continue: dave changes password")
-    require(await (await make_client("dave", PASSWORD)).login(), 401, "continue: dave old password rejected", "login_bad_signature")
-    require(await (await make_client("dave", "a brand new dave password")).login(), 200, "continue: dave new password works")
+    require(
+        await (await make_client("dave", PASSWORD)).login(),
+        401,
+        "continue: dave old password rejected",
+        "login_bad_signature",
+    )
+    require(
+        await (await make_client("dave", "a brand new dave password")).login(), 200, "continue: dave new password works"
+    )
 
     # 8. the read-back stokens still allow incremental sync after the writes
     expected = {
@@ -718,32 +823,50 @@ async def continue_and_check():
     }
     for uid, want in expected.items():
         snap = col(uid)
-        listing = msgpack_unpack((await CTX.clients[snap["owner"]].item_list(uid, stoken=snap["_readback_stoken"])).content)
+        listing = msgpack_unpack(
+            (await CTX.clients[snap["owner"]].item_list(uid, stoken=snap["_readback_stoken"])).content
+        )
         changed = {x["uid"] for x in listing["data"]}
         for item_uid in want:
             check(item_uid in changed, f"continue: incremental list of {uid} includes {item_uid}")
 
     # 9. user-level collection-list stoken from read-back syncs col-new
-    listing = msgpack_unpack(
-        (await alice.collection_list(stoken=CTX.snap["_verify_user_stokens"]["alice"])).content
+    listing = msgpack_unpack((await alice.collection_list(stoken=CTX.snap["_verify_user_stokens"]["alice"])).content)
+    check(
+        "col-new" in {x["item"]["uid"] for x in listing["data"]},
+        "continue: col-new seen via read-back collection stoken",
     )
-    check("col-new" in {x["item"]["uid"] for x in listing["data"]}, "continue: col-new seen via read-back collection stoken")
 
 
 async def verify_final_state():
     for name in CTX.snap["users"]:
         require(await CTX.clients[name].collection_list(), 200, f"final collection list {name}")
 
-    members_new = {m["username"] for m in msgpack_unpack((await CTX.clients["alice"].member_list("col-new")).content)["data"]}
+    members_new = {
+        m["username"] for m in msgpack_unpack((await CTX.clients["alice"].member_list("col-new")).content)["data"]
+    }
     check("alice" in members_new and "carol" not in members_new, "final: col-new members are {alice} only")
     levels_shared = {
-        m["username"]: m["accessLevel"] for m in msgpack_unpack((await CTX.clients["alice"].member_list("col-shared")).content)["data"]
+        m["username"]: m["accessLevel"]
+        for m in msgpack_unpack((await CTX.clients["alice"].member_list("col-shared")).content)["data"]
     }
-    check(levels_shared.get("bob") == 2 and levels_shared.get("carol") == 2, "final: col-shared members RW/bob, RW/carol")
-    check(any(m["username"] == "dave" for m in msgpack_unpack((await CTX.clients["alice"].member_list("col-shared")).content)["data"]), "final: dave member of col-shared")
-    levels_notes = {m["username"] for m in msgpack_unpack((await CTX.clients["alice"].member_list("col-notes")).content)["data"]}
+    check(
+        levels_shared.get("bob") == 2 and levels_shared.get("carol") == 2, "final: col-shared members RW/bob, RW/carol"
+    )
+    check(
+        any(
+            m["username"] == "dave"
+            for m in msgpack_unpack((await CTX.clients["alice"].member_list("col-shared")).content)["data"]
+        ),
+        "final: dave member of col-shared",
+    )
+    levels_notes = {
+        m["username"] for m in msgpack_unpack((await CTX.clients["alice"].member_list("col-notes")).content)["data"]
+    }
     check("bob" not in levels_notes, "final: bob no longer in col-notes")
-    require(await CTX.clients["carol"].collection_get("col-new"), 404, "final: carol no access to col-new", "does_not_exist")
+    require(
+        await CTX.clients["carol"].collection_get("col-new"), 404, "final: carol no access to col-new", "does_not_exist"
+    )
 
 
 async def verify():
@@ -763,7 +886,12 @@ async def verify():
 
     # negative checks still behave the same on the fork image
     require(await (await make_client("alice", PASSWORD)).signup(), 409, "duplicate signup (post-switch)", "user_exists")
-    require(await (await make_client("alice", "wrong-" + PASSWORD)).login(), 401, "login wrong password (post-switch)", "login_bad_signature")
+    require(
+        await (await make_client("alice", "wrong-" + PASSWORD)).login(),
+        401,
+        "login wrong password (post-switch)",
+        "login_bad_signature",
+    )
     require(
         await CTX.clients["alice"]._request("POST", f"{pc.BASE_PATH}/authentication/dashboard_url/"),
         400,
@@ -771,7 +899,9 @@ async def verify():
         "not_supported",
     )
     # websocket subscription ticket with Redis
-    require(await CTX.clients["alice"].subscription_ticket("col-calendar"), 200, "websocket subscription ticket (redis)")
+    require(
+        await CTX.clients["alice"].subscription_ticket("col-calendar"), 200, "websocket subscription ticket (redis)"
+    )
 
     print(f"verify OK ({CTX.count} checks)")
 
