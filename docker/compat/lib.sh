@@ -9,8 +9,8 @@ export COMPAT_DIR REPO_ROOT
 export COMPAT_PORT="${COMPAT_PORT:-3785}"
 export ETEBASE_IMAGE_LEGACY="${ETEBASE_IMAGE_LEGACY:-docker.io/victorrds/etesync:latest}"
 # The default image tag follows the package version in setup.py (single source
-# of truth), queried the same way docker/build.sh does (setup.py --version).
-ETEBASE_VERSION="$(cd "${REPO_ROOT}" && "${PYTHON:-python3}" setup.py --version)"
+# of truth), read via docker/get_version.py (same helper docker/build.sh uses).
+ETEBASE_VERSION="$("${PYTHON:-python3}" "${REPO_ROOT}/docker/get_version.py")"
 export ETEBASE_IMAGE_NEW="${ETEBASE_IMAGE_NEW:-skycoder42/etebase-server:v${ETEBASE_VERSION}}"
 export ETEBASE_VERSION
 # The Python interpreter that runs the driver (defaults to the venv from

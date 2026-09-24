@@ -34,8 +34,8 @@ It runs in three sequential phases, each its own script:
 
 - A working `docker` CLI (docker or podman alias, rootless is fine).
 - The fork image built: `./docker/build.sh server` → the `ETEBASE_IMAGE_NEW`
-  (default `skycoder42/etebase-server:v<version>`, derived from the package
-  version in `setup.py`).
+  (default `skycoder42/etebase-server:v<version>`, where `<version>` is read
+  from `setup.py` by `docker/get_version.py`).
 - `curl` and a Python interpreter with `requirements.txt` installed. The
   scripts default to the repo venv (`.venv/bin/python`, per AGENTS.md); set
   `PYTHON=/path/to/python` to use a different one.

@@ -43,7 +43,7 @@ trap cleanup EXIT
 
 if [ -z "${TAG}" ]; then
   ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-  TAG="v$(cd "${ROOT}" && "${PYTHON:-python3}" setup.py --version)"
+  TAG="v$("${PYTHON:-python3}" "${ROOT}/docker/get_version.py")"
 fi
 
 build_server() {
