@@ -217,11 +217,12 @@ secrets, e.g. `DATABASE_PASSWORD_FILE=/run/secrets/db-passwd`.
 
 ## Container image CI
 
-`.github/workflows/build-image.yml` builds the image for `linux/amd64` and
-`linux/arm64` with build provenance/SBOM enabled. It intentionally sets
-`push: false`: the image is only verified to build, not published. DHI
-credentials are required as `DHI_HUB_USERNAME` / `DHI_HUB_TOKEN` repository
-secrets.
+The `docker` job in `.github/workflows/ci.yml` builds the image for
+`linux/amd64` and `linux/arm64` with build provenance/SBOM enabled, and pushes
+it to `skycoder42/etebase-server` only when the CI run is triggered by a tag
+(releases); on other non-PR runs the image is only verified to build, and for
+PRs the job is skipped. DHI credentials are required as `DHI_HUB_USERNAME` /
+`DHI_HUB_TOKEN` repository secrets.
 
 # `SECRET_KEY` and `secret.txt`
 
@@ -232,7 +233,7 @@ next time the app is run, a new one will be generated. Make sure you keep
 the `secret.txt` file secret (e.g. don’t accidentally commit it to version
 control). However, backing it up is okay, and it makes it easier to restore
 the database to a new EteSync server, but it's not essential. If you want to
-change to a more secure system for storing secrets, edit `etesync_server/settings.py`
+change to a more secure system for storing secrets, edit `etebase_server/settings.py`
 and implement your own method for setting `SECRET_KEY` (remove the line
 where it uses the `get_secret_from_file` function).  Read the Django docs
 for more information about the `SECRET_KEY` and its uses.
@@ -284,7 +285,7 @@ Instead of having to create Django users manually when signup up Etebase users, 
 For example, this makes sense when putting an Etebase server in production.
 However, this does come with the added risk that everybody with access to your server will be able to sign up.
 
-In order to set it up, comment out the line `ETEBASE_CREATE_USER_FUNC = "etebase_server.django.utils.create_user_blocked"` in `server/settings.py` and restart your Etebase server.
+In order to set it up, comment out the line `ETEBASE_CREATE_USER_FUNC = "etebase_server.django.utils.create_user_blocked"` in `etebase_server/settings.py` and restart your Etebase server.
 
 The same setting can be controlled with the `ETEBASE_CREATE_USER_FUNC`
 environment variable (an empty value or `None` enables signup). The Docker

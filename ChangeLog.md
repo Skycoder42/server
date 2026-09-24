@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 0.14.3
+- Fix server error when passing null collection types.
+- Upgrade Django to 5.2 (LTS) and modernize all dependencies: FastAPI 0.141.x, Pydantic 2, redis-py 8, with support for Python 3.11-3.14.
+- Add a production-oriented Docker image `skycoder42/etebase-server` (built on hardened DHI base images, runs as non-root, no shell) whose entrypoint generates the config file, applies migrations and supports in-place upgrades from the `victorrds/etesync` image.
+- Add a full FastAPI test suite and GitHub Actions CI (lint/typecheck, tests across Python versions and OSes, image build + smoke checks) plus an e2e compatibility suite verifying that data produced by the `victorrds/etesync` image continues losslessly on the new image.
+
 ## Version 0.14.2
 - Fix issue with some requests failing in some scenarios with the JS client.
   - The JS client was omitting optional fields which were accidentally made to be required. It happened because pydantic v2 changed the behavior in a few ways (for the better fwiw) and we missed a few places when upgrading.
