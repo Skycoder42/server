@@ -1,5 +1,5 @@
 # Phases 2+3 (continue): the locally built production image.
 services:
   etebase:
-    image: ${ETEBASE_IMAGE_NEW:-skycoder42/etebase-server:v0.14.3}
+    image: ${ETEBASE_IMAGE_NEW:?set by docker/compat/lib.sh}
     pull_policy: never

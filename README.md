@@ -221,8 +221,9 @@ The `docker` job in `.github/workflows/ci.yml` builds the image for
 `linux/amd64` and `linux/arm64` with build provenance/SBOM enabled, and pushes
 it to `skycoder42/etebase-server` only when the CI run is triggered by a tag
 (releases); on other non-PR runs the image is only verified to build, and for
-PRs the job is skipped. DHI credentials are required as `DHI_HUB_USERNAME` /
-`DHI_HUB_TOKEN` repository secrets.
+PRs the job is skipped. When building for a tag, the job first validates that
+the tag matches the package version in `setup.py`. DHI credentials are
+required as `DHI_HUB_USERNAME` / `DHI_HUB_TOKEN` repository secrets.
 
 # `SECRET_KEY` and `secret.txt`
 

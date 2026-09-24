@@ -7,6 +7,9 @@
 #   ./docker/compat/run_compat_test.sh --keep    # leave containers up at end
 #   ./docker/compat/run_compat_test.sh --clean   # also remove the data volume
 set -euo pipefail
+# lib.sh always sits next to this script; shellcheck cannot follow the dynamic
+# path (SC1091 is informational).
+# shellcheck disable=SC1091
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 KEEP=0
@@ -39,6 +42,6 @@ elif [ "${KEEP}" = "1" ]; then
 else
   echo "Stopping the etebase compat server (data kept in volume '${COMPAT_VOLUME}')"
   docker rm -f "${COMPAT_CONTAINER}" >/dev/null 2>&1 || true
-  echo "  - restart:  docker compose -p ${COMPAT_PROJECT} -f ${COMPAT_DIR}/compose.yaml -f ${COMPAT_DIR}/compose.fork.yaml up -d etebase"
+  echo "  - restart:  source ${COMPAT_DIR}/lib.sh && docker compose -p ${COMPAT_PROJECT} -f ${COMPAT_DIR}/compose.yaml -f ${COMPAT_DIR}/compose.fork.yaml up -d etebase"
   echo "  - reset:    ${COMPAT_DIR}/run_compat_test.sh (fresh seed)"
 fi

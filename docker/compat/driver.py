@@ -7,7 +7,8 @@ JSON snapshot of everything (every collection, item, revision, chunk, member,
 pending invitation and stoken).
 
 Phase 3 (`verify`) points at the *same data* served by the fork's production
-image `skycoder42/etebase-server:v0.14.3`, re-logs-in every user, asserts the
+image (built as `skycoder42/etebase-server:v<version>`, where `<version>` is
+the package version in `setup.py`), re-logs-in every user, asserts the
 read-back matches the snapshot exactly (no data loss / broken states), and then
 *continues on* the data (item updates, trashing/restoring, new collections,
 accepting pending invitations, member changes, password change, incremental

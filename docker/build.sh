@@ -42,7 +42,8 @@ cleanup() {
 trap cleanup EXIT
 
 if [ -z "${TAG}" ]; then
-  TAG="$(git describe --tags 2>/dev/null || git rev-parse --short HEAD)"
+  ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  TAG="v$(cd "${ROOT}" && "${PYTHON:-python3}" setup.py --version)"
 fi
 
 build_server() {

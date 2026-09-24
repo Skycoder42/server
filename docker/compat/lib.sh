@@ -8,16 +8,20 @@ REPO_ROOT="$(cd "${COMPAT_DIR}/../.." && pwd)"
 export COMPAT_DIR REPO_ROOT
 export COMPAT_PORT="${COMPAT_PORT:-3785}"
 export ETEBASE_IMAGE_LEGACY="${ETEBASE_IMAGE_LEGACY:-docker.io/victorrds/etesync:latest}"
-export ETEBASE_IMAGE_NEW="${ETEBASE_IMAGE_NEW:-skycoder42/etebase-server:v0.14.3}"
+# The default image tag follows the package version in setup.py (single source
+# of truth), queried the same way docker/build.sh does (setup.py --version).
+ETEBASE_VERSION="$(cd "${REPO_ROOT}" && "${PYTHON:-python3}" setup.py --version)"
+export ETEBASE_IMAGE_NEW="${ETEBASE_IMAGE_NEW:-skycoder42/etebase-server:v${ETEBASE_VERSION}}"
+export ETEBASE_VERSION
 # The Python interpreter that runs the driver (defaults to the venv from
 # AGENTS.md; CI overrides this with its own interpreter).
 PYTHON="${PYTHON:-${REPO_ROOT}/.venv/bin/python}"
 export PYTHON
 
-COMPAT_PROJECT="etebase-compat"
-COMPAT_VOLUME="${COMPAT_PROJECT}_compat_data"
-COMPAT_CONTAINER="etebase-compat"
-COMPAT_REDIS_CONTAINER="etebase-compat-redis"
+export COMPAT_PROJECT="etebase-compat"
+export COMPAT_VOLUME="${COMPAT_PROJECT}_compat_data"
+export COMPAT_CONTAINER="etebase-compat"
+export COMPAT_REDIS_CONTAINER="etebase-compat-redis"
 
 compose() {
   docker compose -p "${COMPAT_PROJECT}" -f "${COMPAT_DIR}/compose.yaml" "$@"
@@ -34,8 +38,7 @@ assert_image_present() {
 
 wait_for_ready() {
   echo "Waiting for the server on 127.0.0.1:${COMPAT_PORT} ..."
-  local i
-  for i in $(seq 1 90); do
+  for _ in $(seq 1 90); do
     if curl -fsS --max-time 3 -o /dev/null "http://127.0.0.1:${COMPAT_PORT}/api/v1/authentication/is_etebase/" 2>/dev/null; then
       echo "OK: server is ready"
       return 0

@@ -34,7 +34,8 @@ It runs in three sequential phases, each its own script:
 
 - A working `docker` CLI (docker or podman alias, rootless is fine).
 - The fork image built: `./docker/build.sh server` → the `ETEBASE_IMAGE_NEW`
-  (default `skycoder42/etebase-server:v0.14.3`).
+  (default `skycoder42/etebase-server:v<version>`, derived from the package
+  version in `setup.py`).
 - `curl` and a Python interpreter with `requirements.txt` installed. The
   scripts default to the repo venv (`.venv/bin/python`, per AGENTS.md); set
   `PYTHON=/path/to/python` to use a different one.
@@ -63,7 +64,7 @@ Individual phases (data survives between them):
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `ETEBASE_IMAGE_LEGACY` | `victorrds/etesync:latest` | Phase-1 image (pulled) |
-| `ETEBASE_IMAGE_NEW` | `skycoder42/etebase-server:v0.14.3` | Phases 2–3 image (local) |
+| `ETEBASE_IMAGE_NEW` | `skycoder42/etebase-server:v<version>` (`<version>` from `setup.py`) | Phases 2–3 image (local) |
 | `COMPAT_PORT` | `3785` | Host port the servers listen on |
 | `PYTHON` | `$REPO_ROOT/.venv/bin/python` | Interpreter running the driver |
 

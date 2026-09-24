@@ -167,6 +167,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Validate tag matches setup.py version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION="$(python3 setup.py --version)"
+          TAG="${GITHUB_REF_NAME#v}"
+          if [ "${VERSION}" != "${TAG}" ]; then
+            echo "::error::setup.py version (${VERSION}) does not match the pushed tag (${GITHUB_REF_NAME})"
+            exit 1
+          fi
+          echo "setup.py version ${VERSION} matches tag ${GITHUB_REF_NAME}"
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
 

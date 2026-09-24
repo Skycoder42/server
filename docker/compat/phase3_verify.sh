@@ -2,6 +2,9 @@
 # Phase 3: verify all phase-1 data survived the image switch, then continue on
 # it (updates, new shares, accepting pending invitations, …) and re-verify.
 set -euo pipefail
+# lib.sh always sits next to this script; shellcheck cannot follow the dynamic
+# path (SC1091 is informational).
+# shellcheck disable=SC1091
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 echo "== Phase 3: verify continuation on ${ETEBASE_IMAGE_NEW} =="

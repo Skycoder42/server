@@ -2,6 +2,9 @@
 # Phase 2: swap the image from victorrds/etesync to the locally built
 # etesync server fork, keeping all data in the volume untouched.
 set -euo pipefail
+# lib.sh always sits next to this script; shellcheck cannot follow the dynamic
+# path (SC1091 is informational).
+# shellcheck disable=SC1091
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 echo "== Phase 2: switch to ${ETEBASE_IMAGE_NEW} =="
