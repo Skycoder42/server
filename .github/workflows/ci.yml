@@ -183,6 +183,13 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          username: ${{ secrets.DHI_HUB_USERNAME }}
+          password: ${{ secrets.DHI_HUB_TOKEN }}
+
       - name: Log in to dhi.io
         uses: docker/login-action@v4
         with:
