@@ -13,7 +13,7 @@ setup(
         "License :: OSI Approved :: GNU Affero General Public License v3",
     ],
     packages=find_packages(include=["etebase_server", "etebase_server.*"]),
-    install_requires=list(open("requirements.in/base.txt")),
+    install_requires=list(open("requirements-src/base.txt")),
     package_data={
         "etebase_server": ["templates/*"],
     },
