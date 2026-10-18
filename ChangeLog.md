@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 0.14.4
+- Docker image: install the PostgreSQL driver from a pinned `requirements-docker.txt` and remove pip from the runtime image, so image scanners no longer flag its vendored libraries.
+- Fix all mypy errors and enforce type checking in CI.
+- Move the pip-compile sources to `requirements-src/` and add Dependabot for automated dependency updates.
+
 ## Version 0.14.3
 - Fix server error when passing null collection types.
 - Upgrade Django to 5.2 (LTS) and modernize all dependencies: FastAPI 0.141.x, Pydantic 2, redis-py 8, with support for Python 3.11-3.14.
