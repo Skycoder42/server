@@ -37,7 +37,7 @@ class CollectionType(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     uid = models.BinaryField(editable=True, blank=False, null=False, db_index=True, unique=True, max_length=1024)
 
-    objects: models.manager.BaseManager["CollectionType"]
+    objects: models.manager.Manager["CollectionType"]
 
 
 class Collection(models.Model):
@@ -48,7 +48,7 @@ class Collection(models.Model):
 
     stoken_annotation = stoken_annotation_builder(["items__revisions__stoken", "members__stoken"])
 
-    objects: models.manager.BaseManager["Collection"]
+    objects: models.manager.Manager["Collection"]
 
     def __str__(self):
         return self.uid
@@ -64,12 +64,13 @@ class Collection(models.Model):
 
     @cached_property
     def stoken(self) -> str:
-        stoken_id = (
+        stoken_row = (
             self.__class__.objects.filter(main_item=self.main_item, items__revisions__current=True)
             .annotate(max_stoken=self.stoken_annotation)
             .values("max_stoken")
-            .first()["max_stoken"]
+            .first()
         )
+        stoken_id = stoken_row["max_stoken"] if stoken_row else 0
 
         if stoken_id == 0:
             raise Exception("stoken is None. Should never happen")
@@ -85,7 +86,7 @@ class CollectionItem(models.Model):
 
     stoken_annotation = stoken_annotation_builder(["revisions__stoken"])
 
-    objects: models.manager.BaseManager["CollectionItem"]
+    objects: models.manager.Manager["CollectionItem"]
 
     class Meta:
         unique_together = ("uid", "collection")
@@ -119,7 +120,7 @@ class CollectionItemChunk(models.Model):
     collection = models.ForeignKey(Collection, related_name="chunks", on_delete=models.CASCADE)
     chunkFile = models.FileField(upload_to=chunk_directory_path, max_length=150, unique=True)
 
-    objects: models.manager.BaseManager["CollectionItemChunk"]
+    objects: models.manager.Manager["CollectionItemChunk"]
 
     def __str__(self):
         return self.uid
@@ -144,7 +145,7 @@ class Stoken(models.Model):
         validators=[UidValidator],
     )
 
-    objects: models.manager.BaseManager["Stoken"]
+    objects: models.manager.Manager["Stoken"]
 
 
 class CollectionItemRevision(models.Model):
@@ -157,7 +158,7 @@ class CollectionItemRevision(models.Model):
     current = models.BooleanField(db_index=True, default=True, null=True)
     deleted = models.BooleanField(default=False)
 
-    objects: models.manager.BaseManager["CollectionItemRevision"]
+    objects: models.manager.Manager["CollectionItemRevision"]
 
     class Meta:
         unique_together = ("item", "current")
@@ -170,7 +171,7 @@ class RevisionChunkRelation(models.Model):
     chunk = models.ForeignKey(CollectionItemChunk, related_name="revisions_relation", on_delete=models.CASCADE)
     revision = models.ForeignKey(CollectionItemRevision, related_name="chunks_relation", on_delete=models.CASCADE)
 
-    objects: models.manager.BaseManager["RevisionChunkRelation"]
+    objects: models.manager.Manager["RevisionChunkRelation"]
 
     class Meta:
         ordering = ("id",)
@@ -195,7 +196,7 @@ class CollectionMember(models.Model):
 
     stoken_annotation = stoken_annotation_builder(["stoken"])
 
-    objects: models.manager.BaseManager["CollectionMember"]
+    objects: models.manager.Manager["CollectionMember"]
 
     class Meta:
         unique_together = ("user", "collection")
@@ -221,7 +222,7 @@ class CollectionMemberRemoved(models.Model):
     collection = models.ForeignKey(Collection, related_name="removed_members", on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
-    objects: models.manager.BaseManager["CollectionMemberRemoved"]
+    objects: models.manager.Manager["CollectionMemberRemoved"]
 
     class Meta:
         unique_together = ("user", "collection")
@@ -244,7 +245,7 @@ class CollectionInvitation(models.Model):
         default=AccessLevels.READ_ONLY,
     )
 
-    objects: models.manager.BaseManager["CollectionInvitation"]
+    objects: models.manager.Manager["CollectionInvitation"]
 
     class Meta:
         unique_together = ("user", "fromMember")
@@ -265,7 +266,7 @@ class UserInfo(models.Model):
     encryptedContent = models.BinaryField(editable=True, blank=False, null=False)
     salt = models.BinaryField(editable=True, blank=False, null=False)
 
-    objects: models.manager.BaseManager["UserInfo"]
+    objects: models.manager.Manager["UserInfo"]
 
     def __str__(self):
         return "UserInfo<{}>".format(self.owner)

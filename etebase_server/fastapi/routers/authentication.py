@@ -156,7 +156,7 @@ def validate_login_request(
     challenge_sent_to_user: Authentication,
     user: UserType,
     expected_action: str,
-    host_from_request: str,
+    host_from_request: t.Optional[str],
 ):
     enc_key = get_encryption_key(bytes(user.userinfo.salt))
     box = nacl.secret.SecretBox(enc_key)
@@ -168,7 +168,7 @@ def validate_login_request(
         raise HttpError("challenge_expired", "Login challenge has expired")
     elif challenge_data["userId"] != user.id:
         raise HttpError("wrong_user", "This challenge is for the wrong user")
-    elif not settings.DEBUG and validated_data.host.split(":", 1)[0] != host_from_request.split(":", 1)[0]:
+    elif not settings.DEBUG and validated_data.host.split(":", 1)[0] != (host_from_request or "").split(":", 1)[0]:
         raise HttpError(
             "wrong_host", f'Found wrong host name. Got: "{validated_data.host}" expected: "{host_from_request}"'
         )

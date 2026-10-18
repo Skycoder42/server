@@ -53,7 +53,9 @@ def derive_login_signing_key(password: str) -> nacl.signing.SigningKey:
     return nacl.signing.SigningKey(seed)
 
 
-def make_revision(*, uid: t.Optional[str] = None, meta: bytes = b"", deleted: bool = False, content: bytes = None):
+def make_revision(
+    *, uid: t.Optional[str] = None, meta: bytes = b"", deleted: bool = False, content: t.Optional[bytes] = None
+):
     """Build a ``CollectionItemRevisionInOut``-shaped payload."""
     content = b"content-" + secrets.token_bytes(16) if content is None else content
     return {

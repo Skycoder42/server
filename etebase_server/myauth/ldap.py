@@ -1,4 +1,6 @@
+import datetime
 import logging
+import typing as t
 
 import ldap
 from django.conf import settings
@@ -21,7 +23,7 @@ def ldap_setting(name, default):
 
 class LDAPConnection:
     __instance__ = None
-    __user_cache = {}  # Username -> Valid until
+    __user_cache: t.Dict[str, datetime.datetime] = {}  # Username -> Valid until
 
     @staticmethod
     def get_instance():

@@ -8,14 +8,14 @@ from django.utils.translation import gettext_lazy as _
 
 class UserManager(DjangoUserManager):
     def get_by_natural_key(self, username: t.Optional[str]):
-        return self.get(**{self.model.USERNAME_FIELD + "__iexact": username})
+        return self.get(**{AbstractUser.USERNAME_FIELD + "__iexact": username})
 
 
 class User(AbstractUser):
     id: int
     username_validator = UnicodeUsernameValidator()
 
-    objects: UserManager = UserManager()
+    objects: t.ClassVar[UserManager] = UserManager()
 
     username = models.CharField(
         _("username"),
@@ -36,7 +36,7 @@ class User(AbstractUser):
 UserType = User
 
 
-def get_typed_user_model() -> UserType:
+def get_typed_user_model() -> t.Type[UserType]:
     from django.contrib.auth import get_user_model
 
     ret: t.Any = get_user_model()

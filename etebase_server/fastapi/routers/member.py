@@ -49,7 +49,7 @@ class CollectionMemberOut(BaseModel):
 
     @classmethod
     def from_orm(cls: t.Type["CollectionMemberOut"], obj: models.CollectionMember) -> "CollectionMemberOut":
-        return cls(username=obj.user.username, accessLevel=obj.accessLevel)
+        return cls(username=obj.user.username, accessLevel=models.AccessLevels(obj.accessLevel))
 
 
 class MemberListResponse(BaseModel):
@@ -70,7 +70,7 @@ def member_list(
     result, new_stoken_obj, done = filter_by_stoken_and_limit(
         iterator, limit, queryset, models.CollectionMember.stoken_annotation
     )
-    new_stoken = new_stoken_obj and new_stoken_obj.uid
+    new_stoken = new_stoken_obj.uid if new_stoken_obj else None
 
     return MsgpackResponse(
         MemberListResponse(

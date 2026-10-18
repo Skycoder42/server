@@ -108,17 +108,8 @@ jobs:
       - name: ruff format check
         run: ruff format --check .
 
-      # mypy currently reports ~54 pre-existing django-stubs errors (they
-      # predate this fork's dependency bump); keep it non-blocking until
-      # they are cleared, per AGENTS.md.
       - name: mypy
-        run: |
-          if mypy .; then
-            echo "mypy passed"
-          else
-            echo "mypy reported errors (currently informational, see AGENTS.md)"
-            exit 0
-          fi
+        run: mypy .
 
   compat:
     name: compat e2e

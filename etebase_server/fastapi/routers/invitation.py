@@ -73,7 +73,7 @@ class CollectionInvitationOut(CollectionInvitationCommon):
         return cls(
             uid=obj.uid,
             version=obj.version,
-            accessLevel=obj.accessLevel,
+            accessLevel=models.AccessLevels(obj.accessLevel),
             username=obj.user.username,
             collection=obj.collection.uid,
             fromUsername=obj.fromMember.user.username,

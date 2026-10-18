@@ -48,7 +48,7 @@ async def get_ticket(
     if not redisw.is_active:
         raise NotSupported(detail="This end-point requires Redis to be configured")
 
-    uid = nacl.encoding.URLSafeBase64Encoder.encode(nacl.utils.random(32))
+    uid = nacl.encoding.URLSafeBase64Encoder.encode(nacl.utils.random(32)).decode()
     ticket_model = TicketInner(user=user.id, req=ticket_request)
     ticket_raw = msgpack_encode(ticket_model.dict())
     await redisw.redis.set(uid, ticket_raw, ex=TICKET_VALIDITY_SECONDS * 1000)
@@ -61,6 +61,8 @@ async def load_websocket_ticket(websocket: WebSocket, ticket: str) -> t.Optional
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return None
     await redisw.redis.delete(ticket)
+    if isinstance(content, str):
+        content = content.encode()
     return TicketInner(**msgpack_decode(content))
 
 

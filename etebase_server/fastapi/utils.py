@@ -4,7 +4,7 @@ import typing as t
 
 import msgpack
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Model, QuerySet
+from django.db.models import Manager, Model, QuerySet
 from fastapi import Depends, Query, status
 from pydantic import BaseModel as PyBaseModel
 from typing_extensions import Literal
@@ -34,7 +34,7 @@ class Context:
     prefetch: t.Optional[Prefetch]
 
 
-def get_object_or_404(queryset: QuerySet[T], **kwargs) -> T:
+def get_object_or_404(queryset: t.Union[QuerySet[T], Manager[T]], **kwargs) -> T:
     try:
         return queryset.get(**kwargs)
     except ObjectDoesNotExist as e:

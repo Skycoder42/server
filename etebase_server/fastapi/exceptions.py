@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict
 class HttpErrorField(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    field: str
+    field: t.Optional[str] = None
     code: str
     detail: str
 
@@ -84,7 +84,18 @@ class HttpError(CustomHttpException):
 
     @property
     def as_dict(self) -> dict:
-        return HttpErrorOut(code=self.code, errors=self.errors, detail=self.detail).model_dump()
+        return HttpErrorOut(
+            code=self.code,
+            detail=self.detail,
+            errors=(
+                [
+                    HttpErrorField(code=error.code, detail=error.detail, field=getattr(error, "field", None))
+                    for error in self.errors
+                ]
+                if self.errors
+                else None
+            ),
+        ).model_dump()
 
 
 class ValidationError(HttpError):
@@ -122,5 +133,5 @@ def transform_validation_error(prefix: str, err: DjangoValidationError):
     elif not hasattr(err, "message"):
         errors = flatten_errors(prefix, err.error_list)
     else:
-        raise HttpError(err.code or "validation_error", err.message)
+        raise HttpError(err.code or "validation_error", str(err.message))
     raise HttpError(code="field_errors", detail="Field validations failed.", errors=errors)

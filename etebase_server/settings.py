@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 
 import configparser
 import os
+import typing as t
 
 from .utils import get_secret_from_file
 
@@ -37,7 +38,7 @@ ALLOWED_HOSTS = []
 # Database
 # https://docs.djangoproject.com/en/2.0/ref/settings/#databases
 
-DATABASES = {
+DATABASES: t.Dict[str, t.Dict[str, t.Any]] = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": os.environ.get("ETEBASE_DB_PATH", os.path.join(BASE_DIR, "db.sqlite3")),
@@ -171,7 +172,7 @@ if any(os.path.isfile(x) for x in config_locations):
         DATABASES = {"default": {x.upper(): y for x, y in config.items("database")}}
 
     if "database-options" in config:
-        DATABASES["default"]["OPTIONS"] = config["database-options"]
+        DATABASES["default"]["OPTIONS"] = dict(config.items("database-options"))
 
     if "ldap" in config:
         ldap = config["ldap"]

@@ -112,9 +112,9 @@ class CollectionOut(CollectionCommon):
         collection_type = member.collectionType
         assert obj.main_item is not None
         ret = cls(
-            collectionType=collection_type and bytes(collection_type.uid),
+            collectionType=bytes(collection_type.uid) if collection_type else None,
             collectionKey=bytes(member.encryptionKey),
-            accessLevel=member.accessLevel,
+            accessLevel=models.AccessLevels(member.accessLevel),
             stoken=obj.stoken,
             item=CollectionItemOut.from_orm_context(obj.main_item, context),
         )
@@ -196,7 +196,11 @@ async def report_items_changed(col_uid: str, stoken: str, items: t.List[Collecti
         return
 
     redis = redisw.redis
-    content = msgpack_encode(CollectionItemListResponse(data=items, stoken=stoken, done=True).dict())
+    content = msgpack_encode(
+        CollectionItemListResponse(
+            data=[CollectionItemOut(**item.dict(exclude={"etag"})) for item in items], stoken=stoken, done=True
+        ).dict()
+    )
     await redis.publish(f"col.{col_uid}", content)
 
 
@@ -210,7 +214,7 @@ def collection_list_common(
     result, new_stoken_obj, done = filter_by_stoken_and_limit(
         stoken, limit, queryset.filter(items__revisions__current=True), models.Collection.stoken_annotation
     )
-    new_stoken = new_stoken_obj and new_stoken_obj.uid
+    new_stoken = new_stoken_obj.uid if new_stoken_obj else None
     context = Context(user, prefetch)
     data: t.List[CollectionOut] = [CollectionOut.from_orm_context(item, context) for item in result]
 
@@ -433,7 +437,7 @@ def item_list_common(
     result, new_stoken_obj, done = filter_by_stoken_and_limit(
         stoken, limit, queryset.filter(revisions__current=True), models.CollectionItem.stoken_annotation
     )
-    new_stoken = new_stoken_obj and new_stoken_obj.uid
+    new_stoken = new_stoken_obj.uid if new_stoken_obj else None
     context = Context(user, prefetch)
     data: t.List[CollectionItemOut] = [CollectionItemOut.from_orm_context(item, context) for item in result]
     return CollectionItemListResponse(data=data, stoken=new_stoken, done=done)
@@ -559,8 +563,8 @@ def fetch_updates(
     queryset = queryset.filter(uid__in=uids).exclude(revisions__in=revs)
 
     new_stoken_obj = get_queryset_stoken(queryset)
-    new_stoken = new_stoken_obj and new_stoken_obj.uid
-    stoken_rev_uid = stoken_rev and getattr(stoken_rev, "uid", None)
+    new_stoken = new_stoken_obj.uid if new_stoken_obj else None
+    stoken_rev_uid = stoken_rev.uid if stoken_rev else None
     new_stoken = new_stoken or stoken_rev_uid
 
     context = Context(user, prefetch)
