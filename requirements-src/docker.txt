@@ -1,0 +1,5 @@
+# Dependencies of the Docker image (docker/etebase/Dockerfile): the base set
+# plus the PostgreSQL driver for DB_ENGINE=postgres. Kept out of base.txt
+# because setup.py uses that as install_requires.
+-r base.txt
+psycopg[binary]

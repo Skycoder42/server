@@ -29,11 +29,14 @@ COPY . /build
 
 # The standard python image has no build tools by default, so pull them in
 # unless the (pre-provisioned) DHI dev image is being used.
+# pip is only needed to populate the venv: it is removed afterwards so neither
+# it nor its vendored libraries (urllib3, msgpack, setuptools, ...) end up in
+# the runtime image, where image scanners would flag their CVEs.
 RUN case "${BUILDER_IMAGE}" in dhi.io/*) ;; *) apk add --no-cache build-base libffi-dev openssl-dev ;; esac \
     && python -m venv /opt/venv \
     && /opt/venv/bin/python -m pip install --no-cache-dir --progress-bar off \
-        -r requirements.txt \
-        'psycopg[binary]'
+        -r requirements-docker.txt \
+    &&/opt/venv/bin/python -m pip uninstall --yes --no-cache-dir pip
 
 RUN mkdir -p /data/media /srv/etebase/static \
     && DJANGO_STATIC_ROOT=/srv/etebase/static /opt/venv/bin/python manage.py collectstatic --noinput

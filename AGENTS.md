@@ -1,37 +1,36 @@
 # AGENTS.md
 
-Etebase 2.0 server (Python). Fork of <https://github.com/etesync/server>; `upstream` remote tracks the original — keep changes compatible with upstream conventions.
+Etebase 2.0 server (Python). Fork of <https://github.com/etesync/server> (`upstream` remote) — keep changes compatible with upstream conventions.
 
 ## Architecture
 
-- Hybrid Django + FastAPI. Django is the ORM/admin layer; FastAPI serves the actual EteSync v2 API.
-- ASGI entrypoint `etebase_server/asgi.py`: the FastAPI app handles `/api/v1/*` and mounts the Django ASGI app at `/` (admin, success page). Run it with `uvicorn etebase_server.asgi:application`; plain Django views will never see API traffic.
-- Django apps: `etebase_server.myauth` (custom `User` model, `AUTH_USER_MODEL = "myauth.User"`), `etebase_server.django` (core models + `django.token_auth`). All core models live in `etebase_server/django/models.py`.
-- API docs are served by FastAPI at `/docs` when running via uvicorn.
-- Signup/login is zero-knowledge (PyNaCl + msgpack), not Django auth. Users are created from the Django admin UI without passwords; API auth is a token in the `Authorization` header, resolved in `fastapi/dependencies.py`.
+- Django is only the ORM/admin layer; FastAPI serves the EteSync v2 API. `etebase_server/asgi.py` routes `/api/v1/*` to FastAPI and mounts Django at `/`, so run via `uvicorn etebase_server.asgi:application` — plain Django views never see API traffic.
+- Auth is zero-knowledge (PyNaCl + msgpack), not Django auth. Users are created passwordless in the Django admin; API auth is an `Authorization` token resolved in `fastapi/dependencies.py`.
+- Signup is blocked by default via `ETEBASE_CREATE_USER_FUNC` in `settings.py`. Config sources: `etebase-server.ini` (repo root, `/etc/etebase-server/`, or `ETEBASE_EASY_CONFIG_PATH`), then the gitignored `etebase_server_settings.py` for final overrides.
 
-## Setup & commands
+## Commands
 
-- Create the venv with the system Python (`/usr/bin/python3 -m venv .venv && source .venv/bin/activate`), then `pip install -r requirements.txt -r requirements-dev.txt`. The venv currently runs Python 3.14; deps are Django 5.2.x + FastAPI 0.141.x.
-- Dev tools (`ruff`, `mypy`, `django-stubs`) come from `requirements-dev.txt`. Both requirements files now pin a compatible `django==5.2.x`, so installing them together works. `requirements-src/{base,development}.txt` are the pip-compile sources. When regenerating, pass `--upgrade` (e.g. `.venv/bin/pip-compile --upgrade --output-file=requirements.txt requirements-src/base.txt`), otherwise pip-compile treats the existing output pins as constraints and keeps stale versions. Never rename `requirements-src/` (or any directory) to end in `.in`: Dependabot's pip helper globs `**/*.in`, and glob matches directories too, so it hands the directory to pip's `parse_requirements` and the whole Dependabot run fails with `dependency_file_not_evaluatable`.
-- Deploy steps: `./manage.py migrate`, `./manage.py collectstatic`, then run uvicorn.
-- Config is read by `etebase_server/settings.py`: optional `etebase-server.ini` (repo root, `/etc/etebase-server/`, or env `ETEBASE_EASY_CONFIG_PATH`), env `ETEBASE_DB_PATH` for sqlite path, and a gitignored `etebase_server_settings.py` module for final overrides. `secret.txt` (gitignored) is auto-generated for `SECRET_KEY`. Defaults: `DEBUG=True`, sqlite.
-- Signup is blocked by default (`ETEBASE_CREATE_USER_FUNC = "etebase_server.django.utils.create_user_blocked"`); comment that line in settings.py to allow it.
+- Venv from the system Python: `/usr/bin/python3 -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-dev.txt`.
+- CI gates on `ruff check .`, `ruff format --check .`, `mypy .` and `.venv/bin/python -m pytest` — keep all green.
+- `./docker/build.sh server-check` builds a clean checkout, checks no secrets are baked in and smoke-tests the server.
 
-## Conventions & gotchas
+## Dependencies
 
-- FastAPI runs async outside Django's request cycle, so Django never cleans up DB connections. Any new FastAPI dependency/endpoint that touches the ORM must be wrapped with `@django_db_cleanup_decorator` from `etebase_server/fastapi/db_hack.py` — check `dependencies.py` for the pattern.
-- Responses and routes use `MsgpackResponse` / `MsgpackRoute` (`fastapi/msgpack.py`), not plain JSON. Errors go through `CustomHttpException`/`HttpError`. `MsgpackRoute` must resolve FastAPI's "effective route context" (`_effective_route_context_var`) in `get_route_handler` — since FastAPI 0.137 the prefix of `include_router` is no longer visible on the route itself, and skipping that makes path params (e.g. `collection_uid`) look like query params.
-- The `/api/v1/ws/*` websocket endpoints require Redis (`ETEBASE_REDIS_URI`); they raise `NotSupported` without it. Note two Python 3.14 / redis-py 8 fixes applied in `fastapi/routers/websocket.py`: `asyncio.wait` needs tasks (bare coroutines are rejected in 3.14), and `pubsub.get_message` returns a dict, not a `(channel, data)` tuple.
-- `etebase_server/fastapi/sendfile/` is vendored third-party code (own LICENSE/README) — avoid editing. Use `SENDFILE_BACKEND` for file serving.
-- Style: ruff + black, line-length 120, double quotes; ruff excludes `migrations/` dirs. Run `ruff check .`, `ruff format --check .` and `mypy .` — all three are green and CI gates on them (mypy uses the django-stubs plugin via `mypy.ini`, which also carries `ignore_missing_imports` overrides for the untyped/optional imports: `setuptools`, `msgpack`, `ldap`, `etebase_server_settings`). The ORM models annotate their managers as `models.manager.Manager["X"]` (not `BaseManager`, which lacks `filter`/`get`/`create`) — keep it that way, and note that django-stubs 5.2.9 does not declare `USERNAME_FIELD` on `AbstractBaseUser`.
-- The package version lives only in `setup.py` (single source of truth). Read it via `docker/get_version.py` (stdlib `ast`, no setuptools needed — plain venvs on Python 3.12+ have no setuptools, so never `python setup.py --version`). `build.sh`, `docker/compat/lib.sh` and the CI release-tag validation all use that helper; the Docker CI step additionally requires the git tag (v-prefixed, e.g. `v0.14.3`) to match it for tag builds.
-- Django migrations are checked in under each app's `migrations/` dir; generate new ones with `./manage.py makemigrations`.
+- `requirements-src/{base,development,docker}.txt` are the pip-compile sources for `requirements.txt`, `requirements-dev.txt` and `requirements-docker.txt`. Always pass `--upgrade` when regenerating (otherwise existing pins act as constraints), and regenerate `requirements-docker.txt` whenever `requirements.txt` changes — they share pins.
+- `docker.txt` is `-r base.txt` + `psycopg[binary]`. psycopg must stay out of `base.txt`: `setup.py` reads it as `install_requires`.
+- Never name any directory `*.in`: Dependabot's pip helper globs `**/*.in`, hits the directory and the whole run fails with `dependency_file_not_evaluatable`.
+- The package version lives only in `setup.py`; read it with `docker/get_version.py` (never `python setup.py --version` — no setuptools on Python 3.12+ venvs). Docker CI requires tag builds to match it (`v0.14.3`).
+
+## Gotchas
+
+- FastAPI runs outside Django's request cycle, so DB connections are never cleaned up automatically. Every FastAPI dependency/endpoint touching the ORM needs `@django_db_cleanup_decorator` (`fastapi/db_hack.py`).
+- Routes use `MsgpackRoute`/`MsgpackResponse` (`fastapi/msgpack.py`). `MsgpackRoute.get_route_handler` must resolve FastAPI's `_effective_route_context_var`: since FastAPI 0.137 the `include_router` prefix isn't on the route, and without it path params (e.g. `collection_uid`) are treated as query params.
+- `/api/v1/ws/*` needs Redis (`ETEBASE_REDIS_URI`). `fastapi/routers/websocket.py` relies on Python 3.14 / redis-py 8 behaviour: `asyncio.wait` needs tasks, not coroutines, and `pubsub.get_message` returns a dict.
+- ORM managers are annotated `models.manager.Manager["X"]`, not `BaseManager` (lacks `filter`/`get`/`create` in django-stubs).
+- `etebase_server/fastapi/sendfile/` is vendored third-party code — don't edit.
+- Docker image (`docker/etebase/Dockerfile`) defaults to DHI bases: the runtime stage has no shell or package manager, so all setup happens in the builder. pip is uninstalled from the venv before copying, so scanners don't flag its vendored libs — keep it that way.
 
 ## Testing
 
-- Test suite lives in `etebase_server/tests/` (pytest + pytest-django + pytest-asyncio), run in-process against the ASGI app. Run it with `.venv/bin/python -m pytest`; config is in `pytest.ini` (collection is scoped via `testpaths = etebase_server/tests`, `django_debug_mode = keep` so `settings.DEBUG` stays True).
-- The suite uses a hand-rolled wire-protocol client (`etebase_server/tests/protocol_client.py`) plus `http_client`/`account` fixtures in `conftest.py`. It needs `settings.ALLOWED_HOSTS=["*"]`, an existing `STATIC_ROOT`, and `ETEBASE_CREATE_USER_FUNC=None` (set in conftest before the app import). Every test uses `pytest.mark.django_db`.
-- The production `docker/etebase` image doubles as the test image: client integration tests run against a locally built `server` via `./docker/build.sh server`, launched with `AUTO_SIGNUP=true` (+ `REDIS_URI` pointing at a compose redis for the websocket endpoints). `./docker/build.sh server-check` additionally verifies a clean checkout builds, no secrets get baked into the image, and the server serves up correctly.
-- Live-Redis websocket coverage lives in `etebase_server/tests/test_websocket_redis.py` and is opt-in: it is skipped unless `ETEBASE_REDIS_URI` is set. To run it locally, start a Redis and point the env var at it, e.g. `podman run -d -p 6390:6379 docker.io/library/redis:8-alpine && ETEBASE_REDIS_URI=redis://127.0.0.1:6390/0 .venv/bin/python -m pytest`. Conversely, `test_websocket.py::test_subscription_ticket_requires_redis` only runs *without* `ETEBASE_REDIS_URI`.
-- `etebase_server/myauth/tests.py` is still a stub; the real API coverage is the FastAPI-level suite above.
+- `etebase_server/tests/` runs in-process against the ASGI app via a hand-rolled wire-protocol client (`protocol_client.py`); every test needs `pytest.mark.django_db`.
+- Live-Redis tests (`test_websocket_redis.py`) are skipped unless `ETEBASE_REDIS_URI` is set, e.g. `podman run -d -p 6390:6379 docker.io/library/redis:8-alpine` + `ETEBASE_REDIS_URI=redis://127.0.0.1:6390/0`. Conversely, `test_subscription_ticket_requires_redis` only runs without it.
