@@ -4,6 +4,11 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      pydantic:
+        patterns:
+          - "pydantic"
+          - "pydantic-core"
 
   - package-ecosystem: "docker"
     directory: "/docker/etebase"

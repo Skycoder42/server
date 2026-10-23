@@ -4,10 +4,10 @@ django>=5.2,<6.0
 msgpack
 pynacl
 # FastAPI is pre-1.0, so minor bumps can change routing internals. We target
-# the 0.141 line (verified, incl. the MsgpackRoute effective-route-context
-# fix behind it); >0.140 guarantees the modern routing machinery is present.
-fastapi>=0.140,<0.142
-# pydantic 2.9 is fastapi 0.141's declared minimum. <3.0 blocks pydantic v3,
+# the 0.162 line (verified, incl. the MsgpackRoute effective-route-context
+# fix behind it); re-verify msgpack.py before allowing the next minor.
+fastapi>=0.162,<0.163
+# pydantic 2.9 is fastapi 0.162's declared minimum. <3.0 blocks pydantic v3,
 # which removes the v2 deprecations this codebase still touches / FastAPI
 # does not support yet.
 pydantic>=2.9,<3.0

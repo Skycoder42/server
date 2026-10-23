@@ -86,7 +86,7 @@ class CollectionItemOut(CollectionItemCommon):
         return cls(
             uid=obj.uid,
             version=obj.version,
-            encryptionKey=obj.encryptionKey,
+            encryptionKey=bytes(obj.encryptionKey) if obj.encryptionKey is not None else None,
             content=CollectionItemRevisionInOut.from_orm_context(obj.content, context),
         )
 

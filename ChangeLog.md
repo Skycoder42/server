@@ -11,6 +11,8 @@
 - Docker image: a command passed to the container is now run instead of the server.
 - Docker image: the "data directory not writable" hint now names the user actually running.
 - Add an e2e test suite for the Docker image's entrypoint (`docker/e2e/`).
+- Upgrade FastAPI to 0.162 and refresh all pinned dependencies (pydantic 2.14, Django 5.2.18, uvicorn 0.54, mypy 2.4, ...).
+- Fix the OpenAPI schema missing the external docs link.
 
 ## Version 0.14.5
 - Docker image: fix the entrypoint failing with `cannot create database directory` when the config uses PostgreSQL or a sqlite path without a directory.
