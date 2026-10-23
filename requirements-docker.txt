@@ -38,7 +38,7 @@ psycopg-binary==3.3.6
     # via psycopg
 pycparser==3.0
     # via cffi
-pydantic==2.13.5
+pydantic==2.14.1
     # via
     #   -r requirements-src/base.txt
     #   fastapi

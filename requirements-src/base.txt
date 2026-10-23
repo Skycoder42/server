@@ -10,7 +10,7 @@ fastapi>=0.140,<0.142
 # pydantic 2.9 is fastapi 0.141's declared minimum. <3.0 blocks pydantic v3,
 # which removes the v2 deprecations this codebase still touches / FastAPI
 # does not support yet.
-pydantic>=2.9,<3.0
+pydantic>=2.14.1,<3.0
 typing_extensions
 uvicorn[standard]
 # uvloop only ships POSIX wheels; uvicorn's [standard] extra already excludes

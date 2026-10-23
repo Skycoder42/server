@@ -34,7 +34,7 @@ msgpack==1.2.2
     # via -r requirements-src/base.txt
 pycparser==3.0
     # via cffi
-pydantic==2.13.5
+pydantic==2.14.1
     # via
     #   -r requirements-src/base.txt
     #   fastapi
