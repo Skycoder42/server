@@ -200,9 +200,9 @@ The full migration and data-continuation flow is verified by the
 | `LANGUAGE_CODE` | `en-us` | |
 | `TIME_ZONE` | `UTC` | |
 | `AUTO_SIGNUP` | `false` | Allow users to sign up automatically. |
-| `AUTO_MIGRATE` | `true` | Apply database migrations on start. |
-| `SUPER_USER` | *(unset)* | Username of the Django superuser to create on first start. |
-| `SUPER_PASS` | *(generated)* | Password for the superuser. |
+| `AUTO_MIGRATE` | `true` | Apply database migrations on start. An empty database is always initialized. |
+| `SUPER_USER` | *(unset)* | Username of a Django superuser to create on start, unless it already exists. |
+| `SUPER_PASS` | *(generated)* | Password for the superuser; a generated one is printed to the log. |
 | `PORT` | `3735` | Port uvicorn listens on. |
 | `DATA_DIR` | `/data` | Base data directory. |
 | `ETEBASE_EASY_CONFIG_PATH` | `/data/etebase-server.ini` | Config file location. |
@@ -211,8 +211,10 @@ The full migration and data-continuation flow is verified by the
 | `ETEBASE_FIX_OWNERSHIP` | *(unset)* | One-off root-only mode: recursively chowns `DATA_DIR` to the container user and exits (see migration above). |
 | `ETEBASE_UID` / `ETEBASE_GID` | `65532` | The user the server runs as; override for rootless setups that remap UIDs. |
 
-Variables that carry secrets (`DATABASE_PASSWORD`, `SUPER_USER`, `SUPER_PASS`,
-...) also accept a `_FILE` variant that reads from a file, for use with Docker
+An empty variable counts as unset (except `ALLOWED_HOSTS`, where it means no
+hosts at all). The database and superuser variables
+(`DB_ENGINE`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`,
+`SUPER_USER`, `SUPER_PASS`) also accept a `_FILE` variant that reads from a file, for use with Docker
 secrets, e.g. `DATABASE_PASSWORD_FILE=/run/secrets/db-passwd`.
 
 ## Container image CI
@@ -279,6 +281,10 @@ exercise the `/api/v1/ws` websocket endpoints, run a Redis instance and set
 `REDIS_URI` (e.g. `redis://redis` via a compose network). See the environment
 variable table above for all options. The image is not suitable for production
 usage by default.
+
+The entrypoint, health check and config generation of the image are covered by
+an e2e suite in `docker/e2e/` that drives the built image through the `docker`
+CLI (see `docker/e2e/README.md`).
 
 # User signup
 

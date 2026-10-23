@@ -1,5 +1,17 @@
 # Changelog
 
+## Version 0.14.6
+- Docker image: fix the entrypoint crashing on restart when `SUPER_USER` is set and the superuser already exists; it is now only created once. Credentials containing quotes no longer break superuser creation.
+- Docker image: fix the health check failing when `ALLOWED_HOSTS` does not contain `127.0.0.1`.
+- Docker image: fix PostgreSQL defaulting to the database name `/data/db.sqlite3` instead of `etebase`, and `DB_ENGINE_FILE`/`DATABASE_NAME_FILE` always failing as "exclusive".
+- Docker image: fix config generation failing for values containing `%`.
+- Docker image: create a custom `STATIC_ROOT` that does not exist yet instead of crashing on start.
+- Docker image: empty environment variables now count as unset, so e.g. an empty `SUPER_PASS` generates (and prints) a password.
+- Docker image: an empty database is initialized even with `AUTO_MIGRATE=false`.
+- Docker image: a command passed to the container is now run instead of the server.
+- Docker image: the "data directory not writable" hint now names the user actually running.
+- Add an e2e test suite for the Docker image's entrypoint (`docker/e2e/`).
+
 ## Version 0.14.5
 - Docker image: fix the entrypoint failing with `cannot create database directory` when the config uses PostgreSQL or a sqlite path without a directory.
 

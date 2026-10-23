@@ -53,8 +53,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DATA_DIR="/data" \
     MEDIA_ROOT="/data/media" \
     STATIC_ROOT="/srv/etebase/static" \
-    DB_ENGINE="sqlite" \
-    DATABASE_NAME="/data/db.sqlite3" \
     ALLOWED_HOSTS="localhost,127.0.0.1,[::1]" \
     PORT="3735"
 

@@ -1,0 +1,40 @@
+name: Weekly rebuild
+
+# Reruns the full CI on the latest release tag so the published image picks up
+# base image and dependency security fixes. Dispatching ci.yml on the tag ref
+# makes the run behave exactly like a tag push (version check, tests, compat,
+# push of latest/semver/sha tags).
+
+on:
+  schedule:
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    name: Rerun CI on latest release tag
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Resolve latest release tag
+        id: tag
+        run: |
+          TAG="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/git/matching-refs/tags/v" --jq '.[].ref' \
+            | sed 's#^refs/tags/##' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | sort -V \
+            | tail -n1)"
+          if [ -z "${TAG}" ]; then
+            echo "::error::no release tag matching vX.Y.Z found"
+            exit 1
+          fi
+          echo "Latest release tag: ${TAG}"
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+
+      - name: Dispatch CI
+        run: gh workflow run ci.yml --repo "${GITHUB_REPOSITORY}" --ref "${{ steps.tag.outputs.tag }}"

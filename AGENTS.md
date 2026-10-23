@@ -33,4 +33,5 @@ Etebase 2.0 server (Python). Fork of <https://github.com/etesync/server> (`upstr
 ## Testing
 
 - `etebase_server/tests/` runs in-process against the ASGI app via a hand-rolled wire-protocol client (`protocol_client.py`); every test needs `pytest.mark.django_db`.
+- `docker/e2e/` tests the built image (entrypoint, health check, config) via the `docker` CLI: `.venv/bin/python -m pytest docker/e2e` after `./docker/build.sh server`. It is outside `testpaths`, so plain `pytest` skips it.
 - Live-Redis tests (`test_websocket_redis.py`) are skipped unless `ETEBASE_REDIS_URI` is set, e.g. `podman run -d -p 6390:6379 docker.io/library/redis:8-alpine` + `ETEBASE_REDIS_URI=redis://127.0.0.1:6390/0`. Conversely, `test_subscription_ticket_requires_redis` only runs without it.
