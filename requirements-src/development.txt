@@ -3,7 +3,7 @@ coverage
 pip-tools
 ruff
 mypy>=2.4.0,<2.5
-django-stubs>=5.2.9,<5.3
+django-stubs>=6.1.2,<6.2
 pytest
 pytest-django
 pytest-asyncio
