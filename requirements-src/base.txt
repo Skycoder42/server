@@ -1,6 +1,6 @@
 # Django 5.2 is the LTS we target. <6.0 blocks a future Django 6.x (breaking
 # major, and django-stubs 5.2.x is not validated against it).
-django>=5.2,<6.0
+django>=6.1.2,<7.0
 msgpack
 pynacl
 # FastAPI is pre-1.0, so minor bumps can change routing internals. We target
