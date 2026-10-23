@@ -9,6 +9,11 @@ updates:
         patterns:
           - "pydantic"
           - "pydantic-core"
+    ignore:
+      - dependency-name: "django"
+        versions: [">=6.0"]
+      - dependency-name: "django-stubs"
+        versions: [">=6.0"]
 
   - package-ecosystem: "docker"
     directory: "/docker/etebase"
