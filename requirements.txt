@@ -66,7 +66,7 @@ typing-inspection==0.4.4
     #   pydantic
 uvicorn[standard]==0.53.0
     # via -r requirements-src/base.txt
-uvloop==0.22.1 ; sys_platform != "win32"
+uvloop==0.23.0 ; sys_platform != "win32"
     # via
     #   -r requirements-src/base.txt
     #   uvicorn
