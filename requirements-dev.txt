@@ -39,7 +39,7 @@ idna==3.20
     #   httpx
 iniconfig==2.3.0
     # via pytest
-mypy==1.18.2
+mypy==2.4.0
     # via -r requirements-src/development.txt
 mypy-extensions==1.1.0
     # via mypy

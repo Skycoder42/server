@@ -2,7 +2,7 @@ django>=5.2,<6.0
 coverage
 pip-tools
 ruff
-mypy>=1.13,<1.19
+mypy>=2.4.0,<2.5
 django-stubs>=5.2.9,<5.3
 pytest
 pytest-django
