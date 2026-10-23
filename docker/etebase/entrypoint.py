@@ -188,10 +188,11 @@ def main():
     config.read(CONFIG_PATH)
     media_root = config["global"].get("media_root", "/data/media")
     ensure_dir(media_root, "media")
-    if "database" in config:
-        db_name = config["database"].get("name", "")
-        if db_name:
-            ensure_dir(os.path.dirname(db_name), "database")
+    # Only sqlite's name is a file path; for postgres it is the database name.
+    if "database" in config and config["database"].get("engine", "").endswith("sqlite3"):
+        db_dir = os.path.dirname(config["database"].get("name", ""))
+        if db_dir:
+            ensure_dir(db_dir, "database")
 
     static_root = config["global"].get("static_root", "/srv/etebase/static")
     if is_writable(static_root):

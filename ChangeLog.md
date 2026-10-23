@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 0.14.5
+- Docker image: fix the entrypoint failing with `cannot create database directory` when the config uses PostgreSQL or a sqlite path without a directory.
+
 ## Version 0.14.4
 - Docker image: install the PostgreSQL driver from a pinned `requirements-docker.txt` and remove pip from the runtime image, so image scanners no longer flag its vendored libraries.
 - Fix all mypy errors and enforce type checking in CI.

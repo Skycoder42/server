@@ -19,7 +19,7 @@ Etebase 2.0 server (Python). Fork of <https://github.com/etesync/server> (`upstr
 - `requirements-src/{base,development,docker}.txt` are the pip-compile sources for `requirements.txt`, `requirements-dev.txt` and `requirements-docker.txt`. Always pass `--upgrade` when regenerating (otherwise existing pins act as constraints), and regenerate `requirements-docker.txt` whenever `requirements.txt` changes — they share pins.
 - `docker.txt` is `-r base.txt` + `psycopg[binary]`. psycopg must stay out of `base.txt`: `setup.py` reads it as `install_requires`.
 - Never name any directory `*.in`: Dependabot's pip helper globs `**/*.in`, hits the directory and the whole run fails with `dependency_file_not_evaluatable`.
-- The package version lives only in `setup.py`; read it with `docker/get_version.py` (never `python setup.py --version` — no setuptools on Python 3.12+ venvs). Docker CI requires tag builds to match it (`v0.14.4`).
+- The package version lives only in `setup.py`; read it with `docker/get_version.py` (never `python setup.py --version` — no setuptools on Python 3.12+ venvs). Docker CI requires tag builds to match it.
 
 ## Gotchas
 
