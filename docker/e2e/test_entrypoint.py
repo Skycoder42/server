@@ -449,10 +449,13 @@ def test_command_may_run_as_root(etebase):
     assert result.stdout.strip() == "0"
 
 
-def test_manage_command(etebase):
-    result = etebase.run("python", "manage.py", "--version")
-    assert result.returncode == 0, result.stderr
-    assert result.stdout.startswith("5.")
+def test_manage_command_uses_the_server_config(etebase, volume):
+    server = etebase.start(volume=volume)
+    server.wait_healthy()
+    server.remove()
+    # Fails if the command misses /data's config and migrated database.
+    result = etebase.run("python", "manage.py", "migrate", "--check", volume=volume)
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_unknown_command(etebase):
