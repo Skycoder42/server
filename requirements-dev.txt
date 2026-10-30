@@ -73,7 +73,7 @@ pytest-asyncio==1.4.0
     # via -r requirements-src/development.txt
 pytest-django==4.14.0
     # via -r requirements-src/development.txt
-ruff==0.17.2
+ruff==0.17.3
     # via -r requirements-src/development.txt
 sqlparse==0.6.0
     # via django
