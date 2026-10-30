@@ -30,7 +30,7 @@ httptools==0.9.0
     # via uvicorn
 idna==3.20
     # via anyio
-msgpack==1.2.3
+msgpack==1.2.4
     # via -r requirements-src/base.txt
 opentelemetry-api==1.45.1
     # via fastapi
