@@ -40,11 +40,11 @@ psycopg-binary==3.3.6
     # via psycopg
 pycparser==3.12
     # via cffi
-pydantic==2.14.1
+pydantic==2.14.2
     # via
     #   -r requirements-src/base.txt
     #   fastapi
-pydantic-core==2.50.1
+pydantic-core==2.50.2
     # via pydantic
 pynacl==1.6.2
     # via -r requirements-src/base.txt
